@@ -11,6 +11,9 @@ class MNistDataModule(pl.LightningDataModule):
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
+        self.train_ds = None
+        self.val_ds = None
+        self.test_ds = None
 
     def prepare_data(self):
         datasets.MNIST(root="dataset/", train=True, download=True)
@@ -32,16 +35,10 @@ class MNistDataModule(pl.LightningDataModule):
         )
 
     def train_dataloader(self):
-        return DataLoader(
-            dataset=self.train_ds, batch_size=self.batch_size, shuffle=True
-        )
+        return DataLoader(dataset=self.train_ds, batch_size=self.batch_size, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(
-            dataset=self.val_ds, batch_size=self.batch_size, shuffle=False
-        )
+        return DataLoader(dataset=self.val_ds, batch_size=self.batch_size, shuffle=False)
 
     def test_dataloader(self):
-        return DataLoader(
-            dataset=self.test_ds, batch_size=self.batch_size, shuffle=False
-        )
+        return DataLoader(dataset=self.test_ds, batch_size=self.batch_size, shuffle=False)
