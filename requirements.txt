@@ -1,0 +1,8 @@
+pytorch_lightning
+torch
+torchvision
+torchmetrics
+
+# pre-commit
+pre-commit
+ruff
