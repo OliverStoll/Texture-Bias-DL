@@ -1,6 +1,6 @@
 import pytorch_lightning as pl
 
-# local
+from src.helper.config_loader import secret
 from src.lightning_tutorial.callbacks import MyPrintingCallback
 from src.lightning_tutorial.config import (
     num_classes,
@@ -12,6 +12,8 @@ from src.lightning_tutorial.config import (
 )
 from src.lightning_tutorial.dataset import MNistDataModule
 from src.lightning_tutorial.model import NN
+
+print(secret("NUM_EPOCHS"))
 
 if __name__ == "__main__":
     model = NN(layer_sizes, num_classes, learning_rate).to(device)

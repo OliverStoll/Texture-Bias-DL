@@ -11,9 +11,7 @@ class NN(pl.LightningModule):
         self.fc2 = nn.Linear(layer_sizes[1], layer_sizes[2])
         self.loss_fn = nn.CrossEntropyLoss()
         self.learning_rate = learning_rate
-        self.accuracy = torchmetrics.Accuracy(
-            task="multiclass", num_classes=num_classes
-        )
+        self.accuracy = torchmetrics.Accuracy(task="multiclass", num_classes=num_classes)
         self.f1_score = torchmetrics.F1Score(
             task="multiclass", num_classes=num_classes, average="macro"
         )
