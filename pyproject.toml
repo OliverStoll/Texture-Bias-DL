@@ -1,2 +1,39 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry]
+name = "python-template"
+version = "0.1.0"
+description = "Sample description"
+authors = ["Oliver Stoll <oliverstoll.berlin@gmail.com>"]
+readme = "README.md"
+
+
+[tool.poetry.dependencies]
+python = "^3.11"
+python-dotenv = "^1.0.0"
+
+
+
+[tool.poetry.group.dev.dependencies]
+poetry = "^1.7.1"
+pre-commit = "^3.6.0"
+ruff = "^0.1.13"
+pytest = "^7.4.4"
+mypy = "^1.8.0"
+sphinx = "^7.2.6"
+sphinx-rtd-theme = "^2.0.0"
+sphinx-serve = "^1.0.1"
+myst-parser = "^2.0.0"
+
+
 [tool.ruff]
-line-length = 100  # defaults to 88 like black
+line-length = 100
+[tool.ruff.lint.pylint]
+max-statements = 16
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true

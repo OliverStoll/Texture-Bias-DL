@@ -1,7 +1,7 @@
-from os import getenv as secret  # noqa: F401
+import os
 
-import dotenv
 import yaml
 
-dotenv.load_dotenv()
-config = yaml.safe_load(open("config.yml"))
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__)).split("src")[0].replace("\\", "/")
+
+config = yaml.safe_load(open(f"{ROOT_DIR}config.yml"))  # load config file to be imported
