@@ -6,9 +6,7 @@ from torch.utils.data import random_split
 
 
 class MNistDataModule(pl.LightningDataModule):
-    """ MNIST dataset module, handling downloading and preparing data. """
-
-
+    """MNIST dataset module, handling downloading and preparing data."""
 
     def __init__(self, data_dir, batch_size, num_workers):
         super().__init__()
