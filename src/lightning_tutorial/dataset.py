@@ -4,6 +4,8 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torch.utils.data import random_split
 
+from src.helper.config_loader import config
+
 
 class MNistDataModule(pl.LightningDataModule):
     """MNIST dataset module, handling downloading and preparing data."""
@@ -18,14 +20,15 @@ class MNistDataModule(pl.LightningDataModule):
         self.test_ds = None
 
     def prepare_data(self):
-        datasets.MNIST(root="dataset/", train=True, download=True)
-        datasets.MNIST(root="dataset/", train=False, download=True)
+        print(config["ROOT_DIR"])
+        datasets.MNIST(root=f"{config['ROOT_DIR']}/data", train=True, download=True)
+        datasets.MNIST(root=f"{config['ROOT_DIR']}/data", train=False, download=True)
 
     def setup(self, stage=None):
         entire_dataset = datasets.MNIST(
             root=self.data_dir,
             train=True,
-            transform=transforms.ToTensor(),
+            transform=transforms.Compose([transforms.ToTensor()]),
             download=False,
         )
         self.train_ds, self.val_ds = random_split(entire_dataset, [50000, 10000])

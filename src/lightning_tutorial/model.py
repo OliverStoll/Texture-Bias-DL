@@ -22,22 +22,26 @@ class NN(pl.LightningModule):
         return x
 
     def training_step(self, batch, batch_idx):
-        loss, _, _ = self._common_step(batch, batch_idx)
+        x, y = batch
+        loss, scores, y = self._common_step(batch, batch_idx)
+        self.accuracy(scores, y)
+        self.f1_score(scores, y)
         self.log_dict(
-            {"train_loss": loss, "train_acc": self.accuracy, "train_f1": self.f1_score},
-            on_step=False,
+            {"train_loss": loss, "train_f1": self.f1_score},
+            on_step=True,
             on_epoch=True,
             prog_bar=True,
         )
         return loss
 
     def validation_step(self, batch, batch_idx):
-        loss, _, _ = self._common_step(batch, batch_idx)
-        # self.log("val_loss", loss)
+        loss, scores, y = self._common_step(batch, batch_idx)
+        self.f1_score(scores, y)
         return loss
 
     def test_step(self, batch, batch_idx):
-        loss, _, _ = self._common_step(batch, batch_idx)
+        loss, scores, y = self._common_step(batch, batch_idx)
+        self.f1_score(scores, y)
         return loss
 
     def _common_step(self, batch, batch_idx):
@@ -46,6 +50,16 @@ class NN(pl.LightningModule):
         scores = self.forward(x)
         loss = self.loss_fn(scores, y)
         return loss, scores, y
+
+    def on_validation_epoch_end(self) -> None:
+        self.log_dict(
+            {"val_f1": self.f1_score.compute()}, on_epoch=True, prog_bar=True, logger=True
+        )
+
+    def on_test_epoch_end(self) -> None:
+        self.log_dict(
+            {"test_f1": self.f1_score.compute()}, on_epoch=True, prog_bar=True, logger=True
+        )
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=self.learning_rate)
