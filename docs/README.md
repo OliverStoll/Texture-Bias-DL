@@ -30,5 +30,6 @@ sphinx-serve -h localhost
 make html
 sphinx-apidoc -t _templates -o source/ ../src
 make clean
+rm -r ./source  # remove old source files
 cd docs
 ```

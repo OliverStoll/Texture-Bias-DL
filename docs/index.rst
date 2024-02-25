@@ -13,7 +13,7 @@ Source Code
 .. toctree::
    :maxdepth: 4
 
-   source/src
+   source/src.texture_bias
 
 
 General & Module Index

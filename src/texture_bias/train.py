@@ -5,9 +5,9 @@ from pytorch_lightning.profilers import PyTorchProfiler
 from torch.profiler import tensorboard_trace_handler, schedule
 
 from src.helper.config_loader import config as c
-from src.lightning_tutorial.callbacks import MyPrintingCallback
-from src.lightning_tutorial.dataset import MNistDataModule
-from src.lightning_tutorial.model import NN
+from src.texture_bias.callbacks import MyPrintingCallback
+from src.texture_bias.dataset import ImageNetDataModule
+from src.texture_bias.model import PretrainedResnet
 
 LOG_DIR = "../../logs/tb_logs"
 
@@ -22,8 +22,10 @@ class TrainingRunner:
             trace_memory=True,
             schedule=schedule(skip_first=2, wait=1, warmup=1, active=20),
         )
-        self.model = NN(c["LAYER_SIZES"], c["NUM_CLASSES"], c["LEARNING_RATE"]).to(c["DEVICE"])
-        self.data_module = MNistDataModule("dataset/", batch_size=c["BATCH_SIZE"], num_workers=4)
+        self.model = PretrainedResnet(c["NUM_CLASSES"]).to(c["DEVICE"])
+        self.data_module = ImageNetDataModule(
+            data_dir=c["DATASET_PATH"], batch_size=c["BATCH_SIZE"], num_workers=4
+        )
         self.trainer = pl.Trainer(
             logger=self.logger,
             # profiler=self.profiler,
@@ -34,7 +36,7 @@ class TrainingRunner:
         )
 
     def run(self):
-        self.trainer.fit(self.model, self.data_module)
+        # self.trainer.fit(self.model, self.data_module)
         self.trainer.test(self.model, self.data_module)
 
 

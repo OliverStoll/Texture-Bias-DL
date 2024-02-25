@@ -5,3 +5,4 @@ NUM_EPOCHS: 3
 LAYER_SIZES: [784, 50, 10]
 DEVICE: 'cpu'
 MODEL_VERSION: 'v1'
+DATASET_PATH: 'C:/CODE/imagenet/1k-valid'
