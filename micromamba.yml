@@ -4,7 +4,6 @@ channels:
 dependencies:
   - python-dotenv>=1.*
   - tensorboard>=2.15.*
-  - torch-tb-profiler
   - scipy>=1.11.*
-  - opencv-python
+  - opencv
   - wandb>=0.16.*
