@@ -2,9 +2,9 @@ name: your_env_name
 channels:
   - conda-forge
 dependencies:
-  - python-dotenv=1.*
-  - tensorboard=2.15.*
-  - torch-tb-profiler=0.4.*
-  - scipy=1.11.*
-  - opencv-python=4.9.*
-  - wandb=0.16.*
+  - python-dotenv>=1.*
+  - tensorboard>=2.15.*
+  - torch-tb-profiler>=0.4.*
+  - scipy>=1.11.*
+  - opencv-python>=4.9.*
+  - wandb>=0.16.*
