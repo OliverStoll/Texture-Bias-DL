@@ -7,3 +7,6 @@ dependencies:
   - scipy>=1.11.*
   - opencv
   - wandb>=0.16.*
+  - torch
+  - torchvision
+  - pytorch-lightning
