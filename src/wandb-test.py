@@ -1,15 +1,14 @@
 # This script needs these libraries to be installed:
 #   torch, torchvision, pytorch_lightning
 
-import wandb
-
 import os
+
+import pytorch_lightning as pl
+import wandb
+from pytorch_lightning.loggers import WandbLogger
 from torch import optim, nn, utils
 from torchvision.datasets import MNIST
 from torchvision.transforms import ToTensor
-
-import pytorch_lightning as pl
-from pytorch_lightning.loggers import WandbLogger
 
 
 class LitAutoEncoder(pl.LightningModule):
@@ -55,7 +54,7 @@ train_loader = utils.data.DataLoader(dataset, shuffle=True)
 wandb_logger = WandbLogger(project="my-awesome-project")
 
 # add your batch size to the wandb config
-wandb_logger.experiment.config["batch_size"] = batch_size
+# wandb_logger.experiment.config["batch_size"] = batch_size
 
 # pass wandb_logger to the Trainer
 trainer = pl.Trainer(limit_train_batches=750, max_epochs=5, logger=wandb_logger)
