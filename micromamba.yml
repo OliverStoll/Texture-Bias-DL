@@ -1,12 +1,13 @@
 name: your_env_name
 channels:
   - conda-forge
+  - pytorch
 dependencies:
   - python-dotenv>=1.*
   - tensorboard>=2.15.*
   - scipy>=1.11.*
   - opencv
   - wandb>=0.16.*
-  - torch
-  - torchvision
+  - pytorch::pytorch
+  - pytorch::torchvision
   - pytorch-lightning
