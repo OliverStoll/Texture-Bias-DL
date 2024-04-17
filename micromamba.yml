@@ -1,6 +1,5 @@
 name: your_env_name
 channels:
-  - pytorch
   - conda-forge
 dependencies:
   - python-dotenv>=1.*
