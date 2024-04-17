@@ -18,6 +18,7 @@ tensorboard = "^2.15.1"
 torch-tb-profiler = "^0.4.3"
 scipy = "^1.11.4"
 opencv-python = "^4.9.0.80"
+wandb = "^0.16.6"
 
 
 
