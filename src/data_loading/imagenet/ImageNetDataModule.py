@@ -5,7 +5,10 @@ from torchvision import datasets
 
 
 class ImageNetDataModule(pl.LightningDataModule):
-    """Downloads the test portion of the ImageNet dataset and provides a dataloader"""
+    """Downloads the test portion of the ImageNet dataset and provides a dataloader
+
+    TODO: Implement real DataModule
+    """
 
     def __init__(self, data_dir: str, batch_size: int = 32, num_workers: int = 4):
         """Initializes the Module

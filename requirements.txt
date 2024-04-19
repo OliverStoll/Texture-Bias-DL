@@ -1,0 +1,11 @@
+torch
+torchvision
+pytorch-lightning
+wandb
+pandas
+fastparquet
+safetensors
+lmdb
+my-common-utils
+opencv-python
+torchmetrics

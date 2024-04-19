@@ -1,8 +1,14 @@
-NUM_CLASSES: 10
-LEARNING_RATE: 0.001
-BATCH_SIZE: 64
-NUM_EPOCHS: 3
-LAYER_SIZES: [784, 50, 10]
-DEVICE: 'cpu'
-MODEL_VERSION: 'v1'
-DATASET_PATH: 'C:/CODE/imagenet/1k-valid'
+learning_rate: 0.001
+batch_size: 64
+epochs: 3
+f1_average: 'micro'
+gpu_indexes: [0]
+
+models:
+  resnet:
+
+
+datasets:
+  bigearthnet:
+    input_channels: 14
+    num_classes: 19
