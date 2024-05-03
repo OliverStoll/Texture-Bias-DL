@@ -22,9 +22,10 @@ from BENv2Utils import _all_bandnames
 
 import pandas as pd
 
+
 class BENv2DataModule(LightningDataModule):
     # This setting is dependent on the system being used
-    pin_memory = False
+    pin_memory = True
 
     def __init__(
             self,
@@ -235,32 +236,6 @@ class BENv2DataModule(LightningDataModule):
         )
 
 
-def get_BENv2_dataloader():
-    # load test names from the test split as a list
-    dir_path = "/media/storagecube/jonasklotz/BigEarthNet-V2/benv2_splits"
-    files = {
-        "train": "all_train.csv",
-        "validation": "all_val.csv",
-        "test": "all_test.csv"
-    }
-    # read csv
-    keys = {}
-    for split, file in files.items():
-        file_path = f"{dir_path}/{file}"
-        split_list = pd.read_csv(file_path, header=None, names=["name"]).name.to_list()
-        keys[split] = split_list
-
-    datamodule = BENv2DataModule(
-        image_lmdb_file="/media/storagecube/jonasklotz/BigEarthNet-V2/BENv2.lmdb",
-        label_file="/media/storagecube/jonasklotz/BigEarthNet-V2/lbls.parquet",
-        s2s1_mapping_file="/media/storagecube/jonasklotz/BigEarthNet-V2/new_s2s1_mapping.parquet",
-        keys=keys,
-        verbose=False,
-    )
-    # setup the datamodule to be able to use it for training and testing
-    datamodule.setup()
-
-    return datamodule.train_dataloader(), datamodule.val_dataloader(), datamodule.test_dataloader()
 
 
 if __name__ == '__main__':

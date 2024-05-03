@@ -55,7 +55,7 @@ class TrainingRunner:
         )
         self.model = PretrainedResnet(config["NUM_CLASSES"]).to(config["DEVICE"])
         self.data_module = ImageNetDataModule(
-            data_dir=config["DATASET_PATH"], batch_size=config["BATCH_SIZE"], num_workers=4
+            dataset_dir=config["DATASET_PATH"], batch_size=config["BATCH_SIZE"], num_workers=4
         )
         self.trainer = pl.Trainer(
             logger=self.logger,
