@@ -101,6 +101,10 @@ class BENv2DataModule(LightningDataModule):
         mean = [mean[b] for b in bands]
         std = [std[b] for b in bands]
 
+        # save the mean and std to csv
+        import pandas as pd
+        pd.DataFrame({"mean": mean, "std": std}, index=None).to_csv("mean_std.csv")
+
         if train_transforms is None:
             from torchvision import transforms
 
@@ -239,36 +243,4 @@ class BENv2DataModule(LightningDataModule):
 
 
 if __name__ == '__main__':
-
-    # load test names from the test split as a list
-    dir_path = "/media/storagecube/jonasklotz/BigEarthNet-V2/benv2_splits"
-    files = {
-        "train": "all_train.csv",
-        "validation": "all_val.csv",
-        "test": "all_test.csv"
-    }
-    # read csv
-    keys = {}
-    for split, file in files.items():
-        file_path = f"{dir_path}/{file}"
-        split_list = pd.read_csv(file_path, header=None, names=["name"]).name.to_list()
-        keys[split] = split_list
-
-    data = BENv2DataModule(
-        image_lmdb_file="/media/storagecube/jonasklotz/BigEarthNet-V2/BENv2.lmdb",
-        label_file="/media/storagecube/jonasklotz/BigEarthNet-V2/lbls.parquet",
-        s2s1_mapping_file="/media/storagecube/jonasklotz/BigEarthNet-V2/new_s2s1_mapping.parquet",
-        keys=keys,
-        verbose=True,
-    )
-    data.setup(stage="test")
-
-
-    test_dataloader = data.test_dataloader()
-    test_dataloader_iter = iter(test_dataloader)
-    images, labels = next(test_dataloader_iter)
-
-    # Dataloader: 32 batch, 14 channels, 120, 120 resolution
-    # Labels: 32 batch, 19 labels (multi-hot)
-
-    print(len(test_dataloader))
+    pass

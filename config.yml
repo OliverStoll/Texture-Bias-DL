@@ -1,25 +1,32 @@
-gpu_indexes: [3]
+gpu_indexes: [2]
 
 # training parameters
-epochs: 3
-limit_val_batches: 500
+epochs: 5
+limit_train_batches:
+limit_val_batches:
+limit_test_batches: 10
 learning_rate: 0.001
 batch_size: 64
 num_workers: 40
 pin_memory: True
 score_average: 'micro'
 
+# utils
+check_class_balance: False
+
 
 datasets:
   bigearthnet:
     task: multilabel
     input_channels: 14
+    image_size: 112  # 120
     num_classes:
     num_labels: 19
   imagenet:
     path: /media/storagecube/data/shared/datasets/ImageNet-2012
     task: multiclass
     input_channels: 3
+    image_size: 224
     num_classes: 1000
     num_labels:
     train_val_test_split: [0.7, 0.15, 0.15]
