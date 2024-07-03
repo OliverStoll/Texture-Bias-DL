@@ -45,12 +45,8 @@ class BENv2DataModule(LightningDataModule):
             eval_transforms: Optional[Callable] = None,
             split_file: Optional[Union[str, Path]] = None,
             keys: Optional[Dict[str, List[str]]] = None,
-            img_size: Optional[
-                int
-            ] = 120,  # only used for mean/std retrieval in case no transform is provided
-            interpolation_mode: Optional[
-                str
-            ] = "nearest",  # only used for mean/std retrieval in case no transform is provided
+            img_size: Optional[int] = 120,
+            interpolation_mode: Optional[str] = "nearest",
             verbose: bool = False,
             **kwargs,
     ):
@@ -103,7 +99,7 @@ class BENv2DataModule(LightningDataModule):
 
         # save the mean and std to csv
         import pandas as pd
-        pd.DataFrame({"mean": mean, "std": std}, index=None).to_csv("mean_std.csv")
+        # pd.DataFrame({"mean": mean, "std": std}, index=None).to_csv("mean_std.csv")
 
         if train_transforms is None:
             from torchvision import transforms
@@ -117,6 +113,7 @@ class BENv2DataModule(LightningDataModule):
                     transforms.RandomVerticalFlip(),
                     # torchvision.transforms.RandomRotation(180),
                     transforms.Normalize(mean, std),
+                    transforms.Resize((img_size, img_size)),
                 ]
             )
         else:
@@ -131,6 +128,7 @@ class BENv2DataModule(LightningDataModule):
             self.eval_transforms = transforms.Compose(
                 [
                     transforms.Normalize(mean, std),
+                    transforms.Resize((img_size, img_size)),
                 ]
             )
         else:

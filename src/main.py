@@ -1,183 +1,131 @@
-import torch
+import os
+
 from torch import nn
 import wandb
-import os
-import torchvision.transforms as transforms
-from pytorch_lightning import LightningModule, Trainer, seed_everything
-from torchmetrics import F1Score, Precision, Recall
+from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.profilers import SimpleProfiler
 import logging
+import warnings
 
+# utils
 from utils.config import ROOT_DIR, CONFIG
 from utils.logger import create_logger
-from data_loading.dataloader import get_all_dataloader
-from models.model_init import get_model
-from callbacks.custom_progress_bar import CustomProgressBar
-from _util_code import _set_gpus_from_config, _seed_everything, _mute_logs  # noqa
+
+# local
+from data_init import DataLoaderCollection
+from lightning_module import ModelModule
+from model_init import ModelCollection
+from _util_code import _seed_everything, _mute_logs  # noqa (run helper code)
+from sanity_checks.check_gpu import print_gpu_info
+
+warnings.filterwarnings("ignore", message="Average precision score for one or more classes was `nan`. Ignoring these classes in weighted-average")
 
 
-class ModelRunner(LightningModule):
-    def __init__(self, dataset_name, dataset_config, model, loss_fn):
-        super().__init__()
-        self.model = model
-        self.loss_fn = loss_fn
-        self.task = dataset_config['task']
+class Run:
+    """ Run class to execute a training run on a specific model and dataset
+
+        Abbreviations: dl = dataloader
+    """
+    log = logging.getLogger("Run")
+    dl_collection = DataLoaderCollection()
+    model_collection = ModelCollection()
+
+    def __init__(self, dataset_name, model_name, train=True, pretrained=False):
+        # arguments
         self.dataset_name = dataset_name
-        self.precision = Precision(num_classes=dataset_config['num_classes'],
-                                   num_labels=dataset_config['num_labels'],
-                                   average=CONFIG['score_average'],
-                                   task=dataset_config['task'])
-        self.recall = Recall(num_classes=dataset_config['num_classes'],
-                             num_labels=dataset_config['num_labels'],
-                             average=CONFIG['score_average'],
-                             task=dataset_config['task'])
-        self.f1_score = F1Score(num_classes=dataset_config['num_classes'],
-                                num_labels=dataset_config['num_labels'],
-                                average=CONFIG['score_average'],
-                                task=dataset_config['task'])
-        self.save_hyperparameters(ignore=['model', 'loss_fn'])
+        self.model_name = model_name
+        self.train = train
+        self.pretrained = pretrained
+        # setup
+        self.data_config = CONFIG['datasets'][dataset_name]
+        dataloader_tuple = self.dl_collection.get_dataloader(dataset_name=dataset_name,
+                                                             model_name=model_name,
+                                                             is_pretrained=pretrained)
+        self.train_dl, self.val_dl, self.test_dl = dataloader_tuple
+        self.model = self.model_collection.get_model(model_name=self.model_name,
+                                                     dataset_config=self.data_config,
+                                                     pretrained=self.pretrained)
+        self.model_module = ModelModule(model=self.model,
+                                        dataset_name=dataset_name,
+                                        dataset_config=self.data_config)
+        logger_tags = [f"model:{model_name}", f"data:{dataset_name}",
+                       'pretrained:true' if pretrained else 'pretrained:false']
+        self.logger = WandbLogger(project=f"Master Thesis",
+                                  name=f"{model_name}-{dataset_name}{'-PT' if pretrained else ''}",
+                                  group=dataset_name,
+                                  tags=logger_tags,
+                                  save_dir=f'{ROOT_DIR}logs')
+        self.profiler = SimpleProfiler(dirpath=f'{ROOT_DIR}logs/profiler',
+                                       filename=f'{dataset_name}-{model_name}',
+                                       extended=True)
+        self.trainer = Trainer(max_epochs=CONFIG['epochs'],
+                               logger=self.logger,
+                               profiler=self.profiler,
+                               devices=DEVICES,
+                               limit_train_batches=CONFIG['limit_train_batches'],
+                               limit_val_batches=CONFIG['limit_val_batches'],
+                               limit_test_batches=CONFIG['limit_test_batches'],
+                               enable_model_summary=False)
 
-    def forward(self, x):
-        return self.model(x)
+    def _get_dataloader(self, dataset, model, is_pretrained, train_transforms=None, val_transforms=None):
+        dl_collection = DataLoaderCollection()
+        return dl_collection.get_dataloader(dataset, model, is_pretrained, train_transforms, val_transforms)
 
-    def calculate_metrics(self, batch):
-        images, labels = batch
-        logits = self(images)
-        loss = self.loss_fn(logits, labels)
-        if self.task == 'multiclass':
-            predictions = torch.argmax(torch.softmax(logits, dim=1), dim=1)
-        elif self.task == 'multilabel':
-            predictions = torch.sigmoid(logits)
-        else:
-            raise ValueError("Task not correctly passed through config")
-        f1 = self.f1_score(predictions, labels.int())
-        precision = self.precision(predictions, labels.int())
-        recall = self.recall(predictions, labels.int())
-        return loss, f1, precision, recall
-
-    def training_step(self, batch, batch_idx):
-        loss, f1, precision, recall = self.calculate_metrics(batch)
-        self.log('loss', loss, on_step=True, on_epoch=False, prog_bar=True, logger=True)
-        self.log('f1', f1, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self.log('precision', precision, on_step=True, on_epoch=False, logger=True)
-        self.log('recall', recall, on_step=True, on_epoch=True, logger=True)
-        return loss
-
-    def validation_step(self, batch, batch_idx):
-        loss, f1, precision, recall = self.calculate_metrics(batch)
-        self.log('val_loss', loss)
-        self.log('val_f1', f1)
-        self.log('val_precision', precision)
-        self.log('val_recall', recall)
-        if batch_idx == 0:
-            self._log_image(batch)
-        return loss
-
-    def test_step(self, batch, batch_idx):
-        loss, f1, precision, recall = self.calculate_metrics(batch)
-        self.log('test_loss', loss)
-        self.log('test_f1', f1, prog_bar=True)
-        self.log('test_precision', precision)
-        self.log('test_recall', recall)
-        if batch_idx == 0:
-            self._log_image(batch)
-        return loss
-
-    def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=CONFIG['learning_rate'])
-
-    def _log_image(self, batch):
-        images, labels = batch
-        first_image = images[0]
-        first_label = labels[0]
-
-        first_prediction = self.forward(first_image.unsqueeze(0))
-        predicted_label = torch.argmax(first_prediction, dim=1).item()
-
-        if self.dataset_name == 'bigearthnet':
-            first_image = first_image[[3, 2, 1], :, :]
-
-        self.logger.experiment.log({"first_image_and_prediction": [
-                wandb.Image(data_or_path=first_image,
-                            caption=f"Prediction: {predicted_label}, Label: {first_label}")
-            ]})
-
-    def on_test_end(self) -> None:
-        pass
-
-    def on_train_end(self) -> None:
-        pass
+    def execute(self):
+        self.log.info(f"Starting Run for {self.model_name} on {self.dataset_name} ({DEVICES})")
+        if self.pretrained:
+            self.log.info("Starting pretrained Test")
+            self.trainer.test(self.model_module, self.test_dl)
+        if self.train:
+            self.log.info("Starting Training")
+            self.trainer.fit(self.model_module, self.train_dl, self.val_dl)
+            self.trainer.test(self.model_module, self.test_dl)
+        wandb.finish()
+        self.log.info("Run finished")
 
 
-def get_loss_fn(task):
-    if task == 'multiclass':
-        return nn.CrossEntropyLoss()
-    elif task == 'multilabel':
-        return nn.BCEWithLogitsLoss()
-    else:
-        raise ValueError("Task not implemented / missing")
+def run_all(models=None, datasets=None, continue_on_error=True, pretrained=None):
+    models = models or list(os.getenv("MODEL"))
+    datasets = datasets or list(os.getenv("DATASET"))
+    assert models is not None, "Models not specified"
+    assert datasets is not None, "Datasets not specified"
+    log.info(f"\n\n\n\t\tSTARTING RUNS FOR {models} ON {datasets} (pretrained: {pretrained})\n\n")
+    for dataset in datasets:
+        for model in models:
+            try:
+                pretrained = False if pretrained is False else (dataset == 'imagenet')
+                run = Run(dataset_name=dataset,
+                          model_name=model,
+                          train=not pretrained,
+                          pretrained=pretrained)
+                run.execute()
+                del run
+            except Exception as e:
+                if continue_on_error:
+                    log.error(f"Run failed for {model} on {dataset}", e)
+                else:
+                    raise e
 
 
-def init_everything_for_run(dataset_name, model_name, pretrained):
-    dataset_config = CONFIG['datasets'][dataset_name]
-    loss_fn = get_loss_fn(task=dataset_config['task'])
-    model = get_model(model_name=model_name, dataset_config=dataset_config, pretrained=pretrained)
-    model_runner = ModelRunner(model=model,
-                               dataset_name=dataset_name,
-                               dataset_config=dataset_config,
-                               loss_fn=loss_fn)
-    logger = WandbLogger(project=f"Master Thesis",
-                         name=f"{model_name}-{dataset_name}{'-PT' if pretrained else ''}",
-                         group=dataset_name,
-                         tags=[f"model:{model_name}", f"data:{dataset_name}", 'is_pretrained' if pretrained else 'not_pretrained'],
-                         save_dir=f'{ROOT_DIR}logs')
-    profiler = SimpleProfiler(dirpath=f'{ROOT_DIR}logs/profiler',
-                              filename=f'{dataset_name}-{model_name}',
-                              extended=True)
-    trainer = Trainer(max_epochs=CONFIG['epochs'],
-                      limit_train_batches=CONFIG['limit_train_batches'],
-                      limit_val_batches=CONFIG['limit_val_batches'],
-                      limit_test_batches=CONFIG['limit_test_batches'],
-                      logger=logger,
-                      profiler=profiler,
-                      enable_model_summary=False,
-                      # callbacks=[CustomProgressBar()],
-                      )
-
-    return model_runner, trainer
-
-
-def execute_run(dataset_name, model_name, dataloader_tuple, train=True, pretrained=False):
-    log.info(f"STARTING RUN [ {dataset_name} | {model_name}{' | pretrained' if pretrained else ''} ]")
-    train_loader, val_loader, test_loader = dataloader_tuple
-    model_runner, trainer = init_everything_for_run(dataset_name, model_name, pretrained)
-    if pretrained:
-        log.info("PRETRAINED TEST")
-        trainer.test(model_runner, test_loader)
-    if train:
-        log.info("TRAINING")
-        trainer.fit(model_runner, train_loader, val_loader)
-        trainer.test(model_runner, test_loader)
-    log.info("FINISHED RUN\n\n\n")
-    wandb.finish()
-
+def determine_gpu():
+    # determine gpu
+    print_gpu_info()
+    DEVICES = [int(os.getenv("MY_DEVICE", "-1"))]
+    if DEVICES is [-1]:
+        DEVICES = [int(input("ENTER GPU INDEX: "))]
+    return DEVICES
 
 
 if __name__ == '__main__':
     log = create_logger("Main")
-    models = ['vit', 'swin', 'convnext', 'resnet', 'efficientnet']
-    datasets = ['imagenet', 'bigearthnet']
+    DEVICES = determine_gpu()
+    _models = ['vit', 'swin', 'convnext', 'resnet', 'efficientnet']
+    _datasets = ['bigearthnet', 'imagenet']
+    _pretrained = False
+    _continue_on_error = False
 
-    dataloaders = get_all_dataloader(datasets)
-    for dataset in datasets:
-        for model in models:
-            try:
-                execute_run(dataset_name=dataset,
-                            model_name=model,
-                            dataloader_tuple=dataloaders[dataset],
-                            train=True,
-                            pretrained=(dataset == 'imagenet'))
-            except Exception as e:
-                log.error("Run failed", e)
+    _models = ['swin', 'vit']
+    _datasets = ['bigearthnet', 'imagenet']
+    run_all(_models, _datasets, _continue_on_error, _pretrained)
 

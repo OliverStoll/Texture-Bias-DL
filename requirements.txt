@@ -9,3 +9,4 @@ lmdb
 my-common-utils
 opencv-python
 torchmetrics
+configilm

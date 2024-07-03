@@ -11,4 +11,4 @@ log = create_logger("SanityCheck GPU")
 def print_gpu_info():
     cmd_str = "nvidia-smi --query-gpu=utilization.gpu --format=csv"
     result = os.popen(cmd_str).read().replace("utilization.gpu [%]", "").replace(" ", "").replace("\n", "  ")
-    log.debug(f"GPU: {CONFIG['gpu_indexes']}  |  [{result}]")
+    log.debug(f"GPU: {CONFIG.get('gpu_indexes', 'None')}  |  [{result}]")
