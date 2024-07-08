@@ -15,7 +15,7 @@ datasets:
   bigearthnet:
     task: multilabel
     input_channels: 14
-    image_size: 112
+    image_size: 224
     num_classes:
     num_labels: 19
   imagenet:

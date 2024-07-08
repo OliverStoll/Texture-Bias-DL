@@ -1,7 +1,10 @@
 import torch.nn as nn
 from torchvision.models import resnet50, efficientnet_b0, vit_b_16, swin_t, convnext_tiny
-from torchvision.models import (ResNet50_Weights, EfficientNet_B0_Weights, ViT_B_16_Weights,
-                                Swin_T_Weights, ConvNeXt_Tiny_Weights)
+from torchvision.models import (ResNet50_Weights,
+                                EfficientNet_B0_Weights as EfficientNet_Weights,
+                                ViT_B_16_Weights,
+                                Swin_T_Weights,
+                                ConvNeXt_Tiny_Weights)
 
 
 class ModelCollection:
@@ -9,8 +12,7 @@ class ModelCollection:
         """ Changes to the model collection also need to be applied in data_init.py ! """
         self.models_dict = {
             'resnet': {'init_fn': self.init_resnet50, 'weights': ResNet50_Weights},
-            'efficientnet': {'init_fn': self.init_efficientnet_b0,
-                             'weights': EfficientNet_B0_Weights},
+            'efficientnet': {'init_fn': self.init_efficientnet_b0, 'weights': EfficientNet_Weights},
             'convnext': {'init_fn': self.init_convnext_tiny, 'weights': ConvNeXt_Tiny_Weights},
             'vit': {'init_fn': self.init_vit_b_16, 'weights': ViT_B_16_Weights},
             'swin': {'init_fn': self.init_swin_transformer_t, 'weights': Swin_T_Weights},
