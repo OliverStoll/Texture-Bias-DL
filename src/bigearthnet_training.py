@@ -1,5 +1,4 @@
 import pandas as pd
-from pytorch_lightning.callbacks import StochasticWeightAveraging
 from pytorch_lightning.loggers import WandbLogger
 from torch.optim.lr_scheduler import CosineAnnealingLR
 import torch.nn as nn
@@ -8,6 +7,8 @@ import wandb
 import pytorch_lightning as pl
 from pytorch_lightning import LightningModule, Trainer
 from torchmetrics import F1Score, AveragePrecision
+from pytorch_lightning.callbacks import ModelCheckpoint
+# from pytorch_lightning.callbacks import StochasticWeightAveraging
 
 from data_loading.BENv2DataModule import BENv2DataModule
 from model_init import ModelCollection
@@ -45,6 +46,7 @@ class GenericModule(LightningModule):
     INPUT_CHANNELS = 14
     OUTPUT_CLASSES = 19
     loss_fn = nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam
 
     def __init__(self, model_name, dataset_config, pretrained):
         super().__init__()
@@ -53,7 +55,7 @@ class GenericModule(LightningModule):
         metric_arguments = {'num_labels': self.OUTPUT_CLASSES, 'task': 'multilabel'}
         self.f1_micro = F1Score(average='micro', **metric_arguments)
         self.f1_macro = F1Score(average='macro', **metric_arguments)
-        self.mAP_weighted = AveragePrecision(average='weighted', **metric_arguments)
+        self.mAP_micro = AveragePrecision(average='micro', **metric_arguments)
         self.mAP_macro = AveragePrecision(average='macro', **metric_arguments)
 
     def _calculate_metrics_on_step(self, batch, batch_idx, stage):
@@ -63,8 +65,8 @@ class GenericModule(LightningModule):
         predictions = torch.sigmoid(unnormalized_logits)
 
         self._log_image_if_first_batch(batch, batch_idx)
+        self.mAP_micro.update(predictions, labels)
         self.mAP_macro.update(predictions, labels)
-        self.mAP_weighted.update(predictions, labels)
         metrics = {
             f'{stage}_loss': self.loss_fn(unnormalized_logits, labels_float),
             f'{stage}_f1_micro': self.f1_micro(predictions, labels),
@@ -74,12 +76,12 @@ class GenericModule(LightningModule):
 
     def _log_mAP_scores_on_epoch_end(self, stage):
         try:
+            self.log(f'{stage}_mAP_micro', self.mAP_micro.compute(), on_step=False, on_epoch=True, logger=True)
             self.log(f'{stage}_mAP_macro', self.mAP_macro.compute(), on_step=False, on_epoch=True, logger=True)
-            self.log(f'{stage}_mAP_weighted', self.mAP_weighted.compute(), on_step=False, on_epoch=True, logger=True)
-        except:
-            print("mAP nicht updated?!")
+        except Exception as e:
+            print("mAP nicht updated?!", e)
         self.mAP_macro.reset()
-        self.mAP_weighted.reset()
+        self.mAP_micro.reset()
 
     def _log_image_if_first_batch(self, batch, batch_idx, image_idx=0):
         if batch_idx != 0:
@@ -89,13 +91,13 @@ class GenericModule(LightningModule):
         raw_prediction = self(image.unsqueeze(0))
         prediction = torch.sigmoid(raw_prediction)
         pred_label_zip = list(zip(prediction[0], labels[image_idx]))
-        prediction_text = ', '.join([f"{p:.1f}{'#' if l else ''}" for p, l in pred_label_zip])
+        prediction_text = ', '.join([f"{'#' if l else ''}{int(p*10)}" for p, l in pred_label_zip])
         caption = f"Preds:  {prediction_text}"
         image = image[[3, 2, 1], :, :]
-        self.logger.experiment.log({'image': wandb.Image(data_or_path=image, caption=caption)})
+        self.logger.experiment.log({'image': wandb.Image(data_or_path=image, caption=caption)})  # noqa
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=LR)
+        optimizer = self.optimizer(self.parameters(), lr=LR)
         scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-5)
         return [optimizer], [scheduler]
 
@@ -133,48 +135,48 @@ def train_model_on_bigearthnet(model_name, dl_tuple):
     bigearthnet_config = CONFIG['datasets']['bigearthnet']
 
     module = GenericModule(model_name=model_name, dataset_config=bigearthnet_config, pretrained=False)
-    wandb_logger = WandbLogger(project='bigearthnet', tags=[f"model:{model_name}"])
+    wandb_logger = WandbLogger(name=model_name, project='bigearthnet', tags=[f"model:{model_name}"])
+
+    checkpoint_callback = ModelCheckpoint(
+        monitor='val_mAP_weighted',
+        dirpath=f'../checkpoints/{model_name}',
+        filename='{epoch:02d}-{val_mAP_weighted:.3f}',
+        mode='max'
+    )
 
     trainer = Trainer(max_epochs=EPOCHS,
                       logger=wandb_logger,
                       devices=DEVICES,
                       gradient_clip_val=GRADIENT_CLIP_VAL,
-                      callbacks=[], # [SWA],
+                      callbacks=[checkpoint_callback],  # [SWA]
                       fast_dev_run=False,
+                      limit_train_batches=None,
+                      limit_val_batches=None,
                       )
     trainer.fit(module, train_dl, val_dl)
+    trainer.test(module, test_dl)
     wandb.finish()
 
 
 
 if __name__ == '__main__':
     # train variables
-    EPOCHS = 2
-    DEVICES = [2]
+    EPOCHS = 5
+    DEVICES = [3]
     BATCH_SIZE = 32
     LR = 1e-4
-    NUM_WORKERS = 16
-    IMG_SIZE = 224
+    NUM_WORKERS = 30
+    IMG_SIZE = 112
 
     # improvements
     GRADIENT_CLIP_VAL = 0.5
-    # SWA = StochasticWeightAveraging(swa_lrs=3e-5)
 
     # train the model
-    dl_tuple = get_bigearthnet_dataloader()
-    for model_name in ['vit', 'resnet', 'convnext', 'efficientnet', 'swin']:
-        print(f"Training model {model_name}")
-        train_model_on_bigearthnet(model_name=model_name, dl_tuple=dl_tuple)
-
-
-
-
-
-    """
-    Data transforms (applied in BENv2DataModule):
-    
-    transforms.RandomHorizontalFlip(),
-    transforms.RandomVerticalFlip(),
-    transforms.Normalize(mean, std),  # mean and std are calculated from the dataset by the BENv2DataModule
-    transforms.Resize((img_size, img_size)),  # passed as 224
-    """
+    print(torch.version.cuda)
+    _dl_tuple = get_bigearthnet_dataloader()
+    for _model_name in ['resnet', 'convnext', 'efficientnet', 'vit', 'swin']:
+        print(f"Training model {_model_name}")
+        try:
+            train_model_on_bigearthnet(model_name=_model_name, dl_tuple=_dl_tuple)
+        except Exception as e:
+            print(f"Error in training model {_model_name}: {e}")
