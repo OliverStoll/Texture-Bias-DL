@@ -20,8 +20,8 @@ class ImageNetDataModule(LightningDataModule):
         self.imagenet_val = None
         self.imagenet_test = None
 
-    def get_dataset_without_full_tar(self, class_to_exclude='full_tar'):
-        dataset = datasets.ImageFolder(self.data_dir, transform=self.val_transform)
+    def get_dataset_without_full_tar(self, transform, class_to_exclude='full_tar'):
+        dataset = datasets.ImageFolder(self.data_dir, transform=transform)
         if class_to_exclude in dataset.class_to_idx:
             class_index_to_exclude = dataset.class_to_idx[class_to_exclude]
             filtered_samples = [s for s in dataset.samples if s[1] != class_index_to_exclude]
@@ -49,9 +49,10 @@ class ImageNetDataModule(LightningDataModule):
                 temp_indices, temp_labels, train_size=relative_val_size, stratify=temp_labels)
             return train_indices, val_indices, test_indices
 
-        full_dataset = self.get_dataset_without_full_tar()
-        indices = list(range(len(full_dataset)))
-        labels = np.array([full_dataset.targets[i] for i in indices])
+        full_dataset_train = self.get_dataset_without_full_tar(transform=self.train_transform)
+        full_dataset_val = self.get_dataset_without_full_tar(transform=self.val_transform)
+        indices = list(range(len(full_dataset_train)))
+        labels = np.array([full_dataset_train.targets[i] for i in indices])
 
         # Calculate split sizes
         train_size = self.train_val_test_split[0]
@@ -62,9 +63,9 @@ class ImageNetDataModule(LightningDataModule):
         train_indices, val_indices, test_indices = stratify_split(indices, labels, train_size,
                                                                   val_size, test_size)
         # Create subsets
-        self.imagenet_train = Subset(full_dataset, train_indices)
-        self.imagenet_val = Subset(full_dataset, val_indices)
-        self.imagenet_test = Subset(full_dataset, test_indices)
+        self.imagenet_train = Subset(full_dataset_train, train_indices)
+        self.imagenet_val = Subset(full_dataset_val, val_indices)
+        self.imagenet_test = Subset(full_dataset_val, test_indices)
 
     def train_dataloader(self):
         return DataLoader(self.imagenet_train, batch_size=self.batch_size, shuffle=True,

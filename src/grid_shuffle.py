@@ -1,96 +1,79 @@
 import cv2
 import numpy as np
-from torchvision.transforms import Compose, Resize, ToTensor
+import torch
+from torchvision import transforms
+import torchvision.transforms.functional as torchfunc
 
-from data_loading.dataloader import get_dataloader
-
-
-def grid_shuffle(image, grid_size, resize_to=None):
-    # resize the image to 256x256
-    if resize_to is not None:
-        image = cv2.resize(image, resize_to)
-
-    # Divide the image into a 4x4 grid
-    rows, cols, _ = image.shape
-    grid_width = cols // grid_size
-    grid_height = rows // grid_size
-
-    # Create a list of grid positions
-    grid_positions = [(i, j) for i in range(grid_size) for j in range(grid_size)]
-
-    # Shuffle the grid positions randomly
-    np.random.shuffle(grid_positions)
-
-    # Create a new image to store the shuffled grid
-    shuffled_image = np.zeros_like(image)
-
-    # Iterate over the grid positions and copy the corresponding grid from the original image to the shuffled image
-    for i, (grid_row, grid_col) in enumerate(grid_positions):
-        # Calculate the coordinates of the current grid in the original image
-        start_row = grid_row * grid_height
-        end_row = start_row + grid_height
-        start_col = grid_col * grid_width
-        end_col = start_col + grid_width
-
-        # Copy the grid from the original image to the shuffled image
-        shuffled_image[start_row:end_row, start_col:end_col] = image[
-            i // grid_size * grid_height : (i // grid_size + 1) * grid_height,
-            i % grid_size * grid_width : (i % grid_size + 1) * grid_width,
-        ]
-
-    return shuffled_image
+from data_init import DataLoaderCollection
 
 
-def make_imagenet_tests():
-    import os
-    root_folder = "/media/storagecube/data/shared/datasets/ImageNet-2012"
+class GridShuffleTransform:
+    def __init__(self, grid_size, resize_to=None):
+        self.grid_size = grid_size
+        self.resize_to = resize_to
 
-    # Get list of directories in the root folder
-    dirs = [d for d in os.listdir(root_folder) if os.path.isdir(os.path.join(root_folder, d))]
+    def __call__(self, image):
+        """Takes an image, splits it into grid_size x grid_size patches and shuffles them"""
 
-    # Sort the directories and take the first one
-    for i in range(1, 1001):
-        first_dir = sorted(dirs)[i]
-        first_dir_path = os.path.join(root_folder, first_dir)
+        if self.resize_to is not None:
+            image = cv2.resize(image, self.resize_to)
 
-        # Get list of files in the first directory
-        files = [f for f in os.listdir(first_dir_path)]
+        # Divide the image into a grid
+        _, rows, cols = image.shape
+        grid_width = cols // self.grid_size
+        grid_height = rows // self.grid_size
+        grid_positions = [(i, j) for i in range(self.grid_size) for j in range(self.grid_size)]
+        np.random.shuffle(grid_positions)  # noqa
+        shuffled_image = np.zeros_like(image)
 
-        # Sort the files and take the first one
-        first_file = sorted(files)[0]
-        first_file_path = os.path.join(first_dir_path, first_file)
+        # Iterate over the grid positions and copy the corresponding grid from the original image
+        for i, (grid_row, grid_col) in enumerate(grid_positions):
+            start_row = grid_row * grid_height
+            end_row = start_row + grid_height
+            start_col = grid_col * grid_width
+            end_col = start_col + grid_width
+            shuffled_image[:, start_row:end_row, start_col:end_col] = image[
+                :,
+                i // self.grid_size * grid_height: (i // self.grid_size + 1) * grid_height,
+                i % self.grid_size * grid_width: (i % self.grid_size + 1) * grid_width
+            ]
 
-        image = cv2.imread(first_file_path)
+        shuffled_tensor = torchfunc.to_tensor(shuffled_image)
+        shuffled_tensor_perm = shuffled_tensor.permute(1, 2, 0)
 
-        # Apply grid shuffle
-        shuffled_image = grid_shuffle(image, grid_size=4)
-
-        # save the shuffled image
-        cv2.imwrite(f"/home/olivers/colab-master-thesis/_imagetests/{i}.jpg", shuffled_image)
-        cv2.imwrite(f"/home/olivers/colab-master-thesis/_imagetests/{i}_original.jpg", image)
-
-
-def make_bigearthnet_tests():
-    _, loader, _ = get_dataloader('bigearthnet')
-    # get image with iter
-    iterator = iter(loader)
-    images, _ = next(iterator)
-
-    # Apply grid shuffle
-    image = images[0].numpy().transpose(1, 2, 0)
-    shuffled_image = grid_shuffle(image, grid_size=4)
-
-    # only save channels 4 3 2
-    shuffled_image = shuffled_image[:, :, [3, 2, 1]]
-
-    # Save the shuffled image
-    cv2.imwrite("shuffled_image.jpg", shuffled_image)
+        return shuffled_tensor_perm
 
 
-def read_lmdb_first_image():
-    pass
+def visualize_normalized_image(image, dataset):
+    image = image.numpy().transpose(1, 2, 0)
+    image = image[:, :, [3, 2, 1]] if dataset == 'bigearthnet' else image
+    rescaled_image = ((image + 1) / 2) * 255
+    return rescaled_image
+
+
+def test_grid_shuffle(dataset):
+    dl_collection = DataLoaderCollection()
+    val_transform = GridShuffleTransform(grid_size=4)
+    dl_tuple = dl_collection.get_dataloader(dataset_name=dataset, model_name='resnet',
+                                            is_pretrained=False, val_transform=val_transform)
+
+    train_dl, val_dl, _ = dl_tuple
+    train_iterator = iter(train_dl)
+    train_imgs, _ = next(train_iterator)
+    val_iterator = iter(val_dl)
+    val_imgs, _ = next(val_iterator)
+
+    train_images = train_imgs[:5]
+    train_images = [visualize_normalized_image(image, dataset) for image in train_images]
+    val_images = val_imgs[:5]
+    val_images = [visualize_normalized_image(image, dataset) for image in val_images]
+
+    for i in range(5):
+        cv2.imwrite(f"../output/{dataset}/{i}_shuffled.jpg", val_images[i])
+        cv2.imwrite(f"../output/{dataset}/{i}_original.jpg", train_images[i])
 
 
 if __name__ == "__main__":
-    make_bigearthnet_tests()
+    test_grid_shuffle(dataset='imagenet')
+    test_grid_shuffle(dataset='bigearthnet')
 

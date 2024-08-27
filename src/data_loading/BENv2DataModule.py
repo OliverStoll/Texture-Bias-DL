@@ -12,20 +12,19 @@ import numpy as np
 from lightning.pytorch import LightningDataModule
 from torch.utils.data import DataLoader
 
-# set python path to
-
 from BENv2DataSet import BENv2DataSet
 from BENv2Stats import means, stds
 from BENv2TorchUtils import ben_19_labels_to_multi_hot
 from BENv2TorchUtils import stack_and_interpolate
 from BENv2Utils import _all_bandnames
 
+from torchvision import transforms
 import pandas as pd
 
 
 class BENv2DataModule(LightningDataModule):
     # This setting is dependent on the system being used
-    pin_memory = True
+    pin_memory = True  # CHANGED BY ME
 
     def __init__(
             self,
@@ -93,52 +92,32 @@ class BENv2DataModule(LightningDataModule):
             interpolation_method = f"{img_size}_{interpolation_mode}"
         mean = means[interpolation_method]
         std = stds[interpolation_method]
-        # only select the right bands
         mean = [mean[b] for b in bands]
         std = [std[b] for b in bands]
 
-        # save the mean and std to csv
-        import pandas as pd
-        # pd.DataFrame({"mean": mean, "std": std}, index=None).to_csv("mean_std.csv")
+        baseline_transforms = transforms.Compose([
+            transforms.Normalize(mean, std),
+            transforms.Resize((img_size, img_size)),  # ADDED BY ME
+        ])
 
         if train_transforms is None:
-            from torchvision import transforms
-
             self._print_info("Using default train transformation.")
-
-            # use default transforms
-            self.train_transforms = transforms.Compose(
-                [
-                    transforms.RandomHorizontalFlip(),
-                    transforms.RandomVerticalFlip(),
-                    # torchvision.transforms.RandomRotation(180),
-                    transforms.Normalize(mean, std),
-                    transforms.Resize((img_size, img_size)),
-                ]
-            )
-        else:
-            self.train_transforms = train_transforms
-
+            train_transforms = transforms.Compose([
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+            ])
         if eval_transforms is None:
-            from torchvision import transforms
-
             self._print_info("Using default eval transformation.")
+            eval_transforms = transforms.Compose([])
 
-            # use default transforms
-            self.eval_transforms = transforms.Compose(
-                [
-                    transforms.Normalize(mean, std),
-                    transforms.Resize((img_size, img_size)),
-                ]
-            )
-        else:
-            self.eval_transforms = eval_transforms
+        # combine the given transforms and the baseline transforms, to use together
+        self.train_transforms = transforms.Compose([baseline_transforms, train_transforms])
+        self.eval_transforms = transforms.Compose([baseline_transforms, eval_transforms])
 
         if keys is not None:
             for s in ["train", "validation", "test"]:
-                assert (
-                        s in keys
-                ), f"The keys dict needs to have a {s} key containing the list of patches for split {s}"
+                assert (s in keys), (f"The keys dict needs to have a {s} key "
+                                     f"containing the list of patches for split {s}")
             self.keys = keys
         elif split_file is not None:
             # key retrieval from label and split file
@@ -156,12 +135,12 @@ class BENv2DataModule(LightningDataModule):
                 ["lbl_19", "patch"], axis=1
             )
             self.keys = {
-                split: sorted(list(df[df.split == split].name.values)) for split in ["train", "validation", "test"]
+                split: sorted(list(df[df.split == split].name.values)) for split in
+                ["train", "validation", "test"]
             }
         else:
-            raise RuntimeError(
-                "Please provide a dictionary for splits or the split file so that the split can be retrieved automatically"
-            )
+            raise RuntimeError("Please provide a dictionary for splits or the split file "
+                               "so that the split can be retrieved automatically")
 
     def _print_info(self, info: str):
         if self.verbose:
@@ -236,8 +215,6 @@ class BENv2DataModule(LightningDataModule):
             pin_memory=self.pin_memory,
             shuffle=False,
         )
-
-
 
 
 if __name__ == '__main__':

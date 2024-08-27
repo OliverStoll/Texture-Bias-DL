@@ -1,6 +1,8 @@
 import pandas as pd
 from torchvision.models import (ResNet50_Weights, EfficientNet_B0_Weights, ViT_B_16_Weights,
                                 Swin_T_Weights, ConvNeXt_Tiny_Weights)
+from torchvision import transforms
+from torchvision.transforms import Compose
 
 from data_loading.BENv2DataModule import BENv2DataModule
 from data_loading.ImageNetDataModule import ImageNetDataModule
@@ -66,11 +68,12 @@ class DataLoaderCollection:
 
     def get_dataloader(self, dataset_name, model_name, is_pretrained, train_transform=None, val_transform=None):
         self.log.debug(f"Initializing dataloader: [{dataset_name.upper()} | {model_name.upper()}{' | Pretrained' if is_pretrained else ''}]")
-        init_fn = self.datamodule_init_fns[dataset_name]
+        dm_init_function = self.datamodule_init_fns[dataset_name]
         if dataset_name == "imagenet":
-            val_transform = val_transform or self.default_transforms[model_name]
-            train_transform = train_transform or self.default_transforms[model_name]
-        datamodule = init_fn(train_transform=train_transform, val_transform=val_transform)
+            base_t = self.default_transforms[model_name]
+            train_transform = base_t if train_transform is None else Compose([base_t, train_transform])
+            val_transform = base_t if val_transform is None else Compose([base_t, val_transform])
+        datamodule = dm_init_function(train_transform=train_transform, val_transform=val_transform)
         datamodule.setup()
         return datamodule.train_dataloader(), datamodule.val_dataloader(), datamodule.test_dataloader()
 

@@ -14,6 +14,8 @@ from data_loading.BENv2DataModule import BENv2DataModule
 from model_init import ModelCollection
 from utils.config import CONFIG
 
+wandb.require("core")
+
 
 def get_bigearthnet_dataloader():
     """ Get the dataloaders, using https://git.tu-berlin.de/rsim/BENv2-DataLoading """
@@ -55,7 +57,7 @@ class GenericModule(LightningModule):
         metric_arguments = {'num_labels': self.OUTPUT_CLASSES, 'task': 'multilabel'}
         self.f1_micro = F1Score(average='micro', **metric_arguments)
         self.f1_macro = F1Score(average='macro', **metric_arguments)
-        self.mAP_micro = AveragePrecision(average='micro', **metric_arguments)
+        self.mAP_micro = AveragePrecision(average='micro', **metric_arguments)  # noqa
         self.mAP_macro = AveragePrecision(average='macro', **metric_arguments)
 
     def _calculate_metrics_on_step(self, batch, batch_idx, stage):
@@ -65,8 +67,9 @@ class GenericModule(LightningModule):
         predictions = torch.sigmoid(unnormalized_logits)
 
         self._log_image_if_first_batch(batch, batch_idx)
-        self.mAP_micro.update(predictions, labels)
-        self.mAP_macro.update(predictions, labels)
+        if stage != "train":
+            self.mAP_micro.update(predictions, labels)
+            self.mAP_macro.update(predictions, labels)
         metrics = {
             f'{stage}_loss': self.loss_fn(unnormalized_logits, labels_float),
             f'{stage}_f1_micro': self.f1_micro(predictions, labels),
@@ -119,9 +122,6 @@ class GenericModule(LightningModule):
         self.log_dict(metrics, logger=True)
         return metrics['test_loss']
 
-    def on_train_epoch_end(self):
-        self._log_mAP_scores_on_epoch_end("train")
-
     def on_validation_epoch_end(self):
         self._log_mAP_scores_on_epoch_end("val")
 
@@ -133,14 +133,15 @@ def train_model_on_bigearthnet(model_name, dl_tuple):
     train_dl, val_dl, test_dl = dl_tuple
     pl.seed_everything(42)
     bigearthnet_config = CONFIG['datasets']['bigearthnet']
+    tags = [f"model:{model_name}", f"dataset:bigearthnet", f"img_size:{IMG_SIZE}", f"batch_size:{BATCH_SIZE}", f"lr:{LR}", f"num_workers:{NUM_WORKERS}", f"gradient_clipping:{GRADIENT_CLIP_VAL}"]
 
     module = GenericModule(model_name=model_name, dataset_config=bigearthnet_config, pretrained=False)
-    wandb_logger = WandbLogger(name=model_name, project='bigearthnet', tags=[f"model:{model_name}"])
+    wandb_logger = WandbLogger(name=model_name, project='bigearthnet', tags=tags, save_dir=LOGGING_PATH)
 
     checkpoint_callback = ModelCheckpoint(
-        monitor='val_mAP_weighted',
-        dirpath=f'../checkpoints/{model_name}',
-        filename='{epoch:02d}-{val_mAP_weighted:.3f}',
+        monitor='val_mAP_micro',
+        dirpath=f'{LOGGING_PATH}/checkpoints/{model_name}',
+        filename='{epoch:02d}-{val_mAP_micro:.3f}',
         mode='max'
     )
 
@@ -160,8 +161,9 @@ def train_model_on_bigearthnet(model_name, dl_tuple):
 
 
 if __name__ == '__main__':
+    LOGGING_PATH = '/media/storagecube/olivers/logs'
     # train variables
-    EPOCHS = 5
+    EPOCHS = 10
     DEVICES = [3]
     BATCH_SIZE = 32
     LR = 1e-4
@@ -169,14 +171,15 @@ if __name__ == '__main__':
     IMG_SIZE = 112
 
     # improvements
-    GRADIENT_CLIP_VAL = 0.5
+    # GRADIENT_CLIP_VAL = 0.5
 
     # train the model
     print(torch.version.cuda)
     _dl_tuple = get_bigearthnet_dataloader()
     for _model_name in ['resnet', 'convnext', 'efficientnet', 'vit', 'swin']:
-        print(f"Training model {_model_name}")
-        try:
-            train_model_on_bigearthnet(model_name=_model_name, dl_tuple=_dl_tuple)
-        except Exception as e:
-            print(f"Error in training model {_model_name}: {e}")
+        for GRADIENT_CLIP_VAL in [None, 0.5]:
+            print(f"Training model {_model_name}")
+            try:
+                train_model_on_bigearthnet(model_name=_model_name, dl_tuple=_dl_tuple)
+            except Exception as e:
+                print(f"Error in training model {_model_name}: {e}")
