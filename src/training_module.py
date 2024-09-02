@@ -51,13 +51,11 @@ class TrainingModule(LightningModule):
             'task': dataset_config['task']
         }
         self.simple_metrics = ['accuracy', 'precision', 'recall', 'f1']
-        self.log_train_metrics = {'on_step': True, 'on_epoch': True, 'logger': True}
-        self.log_val_metrics = {'on_step': False, 'on_epoch': True, 'logger': True}
         self.accuracy_micro = Accuracy(**metric_data, average='micro')
         self.precision_micro = Precision(**metric_data, average='micro')
         self.recall_micro = Recall(**metric_data, average='micro')
         self.f1_score_micro = F1Score(**metric_data, average='micro')
-        self.map_metric_weighted = AveragePrecision(**metric_data, average='weighted')
+        self.map_metric_micro = AveragePrecision(**metric_data, average='micro')  # noqa
         # macro metrics
         self.accuracy_macro = Accuracy(**metric_data, average='macro')
         self.precision_macro = Precision(**metric_data, average='macro')
@@ -77,11 +75,7 @@ class TrainingModule(LightningModule):
     def forward(self, x):
         return self.model(x)
 
-    def calculate_metrics(self, batch, is_eval=False):
-        images, labels_float = batch
-        unnormalized_logits = self(images)
-        loss = self.loss_fn(unnormalized_logits, labels_float)
-        labels = labels_float.int()
+    def _get_prediction(self, unnormalized_logits):
         if self.task == 'multiclass':
             predictions = torch.argmax(torch.softmax(unnormalized_logits, dim=1), dim=1)
             predictions_binary = predictions
@@ -89,98 +83,55 @@ class TrainingModule(LightningModule):
             predictions = torch.sigmoid(unnormalized_logits)
             predictions_binary = predictions.gt(0.5)
         else:
-            raise ValueError("Task not correctly passed through config")
+            raise ValueError("Task not correctly passed through dataset config")
+        return predictions, predictions_binary
+
+    def _calculate_map_metrics(self, predictions, predictions_binary, labels):
+        self.val_step_outputs.append((predictions_binary.cpu(), labels.cpu()))
+        if self.task == 'multilabel':
+            self.map_metric_micro.update(predictions, labels)
+            self.map_metric_macro.update(predictions, labels)
+            self.map_metric_classes.update(predictions, labels)
+
+    def calculate_metrics(self, batch, batch_idx, stage):
+        images, labels_float = batch
+        unnormalized_logits = self(images)
+        loss = self.loss_fn(unnormalized_logits, labels_float)
+        labels = labels_float.int()
+        predictions, predictions_binary = self._get_prediction(unnormalized_logits)
+        if stage == 'val' or stage == 'test':
+            self._calculate_map_metrics(predictions, predictions_binary, labels)
+        if batch_idx == 0:
+            self._log_image(batch, stage=stage)  # UNTESTED
+
+        # todo: add stage to metric names
         metrics = {
-            'loss': loss,
-            'f1': self.f1_score_micro(predictions, labels),
-            'precision': self.precision_micro(predictions, labels),
-            'recall': self.recall_micro(predictions, labels),
-            'accuracy': self.accuracy_micro(predictions, labels),
-            'f1_macro': self.f1_score_macro(predictions, labels),
-            'precision_macro': self.precision_macro(predictions, labels),
-            'recall_macro': self.recall_macro(predictions, labels),
-            'accuracy_macro': self.accuracy_macro(predictions, labels),
-            'f1_classes': self.f1_score_classes(predictions, labels),
-            'precision_classes': self.precision_classes(predictions, labels),
-            'recall_classes': self.recall_classes(predictions, labels),
-            'accuracy_classes': self.accuracy_classes(predictions, labels)
+            f'{stage}_loss': loss,
+            f'{stage}_f1': self.f1_score_micro(predictions, labels),
+            f'{stage}_precision': self.precision_micro(predictions, labels),
+            f'{stage}_recall': self.recall_micro(predictions, labels),
+            f'{stage}_accuracy': self.accuracy_micro(predictions, labels),
+            f'{stage}_f1_macro': self.f1_score_macro(predictions, labels),
+            f'{stage}_precision_macro': self.precision_macro(predictions, labels),
+            f'{stage}_recall_macro': self.recall_macro(predictions, labels),
+            f'{stage}_accuracy_macro': self.accuracy_macro(predictions, labels),
+            f'{stage}_f1_classes': self.f1_score_classes(predictions, labels),
+            f'{stage}_precision_classes': self.precision_classes(predictions, labels),
+            f'{stage}_recall_classes': self.recall_classes(predictions, labels),
+            f'{stage}_accuracy_classes': self.accuracy_classes(predictions, labels)
         }
-        if is_eval:
-            self.val_step_outputs.append((predictions_binary.cpu(), labels.cpu()))
-            if self.task == 'multilabel':
-                self.map_metric_weighted.update(predictions, labels)
-                self.map_metric_macro.update(predictions, labels)
-                self.map_metric_classes.update(predictions, labels)
         return metrics
 
-    def training_step(self, batch, batch_idx):
-        metrics = self.calculate_metrics(batch)
-        self.log('loss', metrics['loss'], on_step=True, on_epoch=False, prog_bar=True, logger=True)
-        for metric in self.simple_metrics:
-            self.log(metric, metrics[metric], **self.log_train_metrics)
-            self.log(f"{metric}_macro", metrics[f"{metric}_macro"], **self.log_train_metrics)
-            if self.task == 'multilabel':
-                metric_classes = {f"{metric}_{BEN_LABELS[i][1]}": value for i, value in
-                                  enumerate(metrics[f"{metric}_classes"])}
-                self.log_dict(metric_classes, **self.log_train_metrics)
-        if batch_idx == 0:
-            self._log_image(batch, stage='train')  # UNTESTED
-        return metrics['loss']
-
-    def validation_step(self, batch, batch_idx):
-        metrics = self.calculate_metrics(batch, is_eval=True)
-        self.log('val_loss', metrics['loss'], on_epoch=True, logger=True)
-        for metric in self.simple_metrics:
-            self.log(f'val_{metric}', metrics[metric], **self.log_val_metrics)
-            self.log(f"val_{metric}_macro", metrics[f"{metric}_macro"], **self.log_val_metrics)
-            if self.task == 'multilabel':
-                metric_classes = {f"val_{metric}_{BEN_LABELS[i][1]}": value for i, value in
-                                  enumerate(metrics[f"{metric}_classes"])}
-                self.log_dict(metric_classes, **self.log_val_metrics)
-        if batch_idx == 0:
-            self._log_image(batch, stage='val')
-        return metrics['loss']
-
-    def test_step(self, batch, batch_idx):
-        metrics = self.calculate_metrics(batch, is_eval=True)
-        self.log('test_loss', metrics['loss'], logger=True, on_epoch=True)
-        for metric in self.simple_metrics:
-            self.log(f'test_{metric}', metrics[metric], **self.log_val_metrics)
-            self.log(f"test_{metric}_macro", metrics[f"{metric}_macro"], **self.log_val_metrics)
-            if self.task == 'multilabel':
-                metric_classes = {f"test_{metric}_{BEN_LABELS[i][1]}": value for i, value in
-                                  enumerate(metrics[f"{metric}_classes"])}
-                self.log_dict(metric_classes, **self.log_val_metrics)
-        if batch_idx == 0:
-            self._log_image(batch, stage='test')
-        return metrics['loss']
-
-    def on_validation_epoch_end(self) -> None:
-        self._log_classification_report()
+    def log_mAP_on_epoch_end(self, stage):
         if self.task == 'multilabel':
-            self.log('val_mAP', self.map_metric_weighted.compute(), logger=True, on_epoch=True)
-            self.log('val_mAP_macro', self.map_metric_macro.compute(), logger=True, on_epoch=True)
+            self.log(f'{stage}_mAP', self.map_metric_micro.compute(), logger=True, on_epoch=True)
+            self.log(f'{stage}_mAP_macro', self.map_metric_macro.compute(), logger=True, on_epoch=True)
             map_classes = self.map_metric_classes.compute()
-            map_classes_dict = {f'val_mAP_{BEN_LABELS[i][1]}': map_class for i, map_class in enumerate(map_classes)}
+            map_classes_dict = {f'{stage}_mAP_{BEN_LABELS[i][1]}': map_class for i, map_class in enumerate(map_classes)}
             self.log_dict(map_classes_dict, on_epoch=True, logger=True)
-            self.map_metric_weighted.reset()
+            self.map_metric_micro.reset()
             self.map_metric_macro.reset()
             self.map_metric_classes.reset()
-
-    def on_test_epoch_end(self) -> None:
-        self._log_classification_report()
-        if self.task == 'multilabel':
-            self.log('test_mAP', self.map_metric_weighted.compute(), logger=True, on_epoch=True)
-            self.log('test_mAP_macro', self.map_metric_macro.compute(), logger=True, on_epoch=True)
-            map_classes = self.map_metric_classes.compute()
-            map_classes_dict = {f'test_mAP_{BEN_LABELS[i][1]}': map_class for i, map_class in enumerate(map_classes)}
-            self.log_dict(map_classes_dict, on_epoch=True, logger=True)
-            self.map_metric_weighted.reset()
-            self.map_metric_macro.reset()
-            self.map_metric_classes.reset()
-
-    def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=CONFIG['learning_rate'])
 
     def _get_log_image_caption(self, image, labels, idx):
         raw_prediction = self.forward(image.unsqueeze(idx))
@@ -211,7 +162,7 @@ class TrainingModule(LightningModule):
         image = image if self.dataset_name == 'imagenet' else images[idx][[3, 2, 1], :, :]
         self.logger.experiment.log({f"{stage}_image": wandb.Image(data_or_path=image, caption=caption)})
 
-    def _log_classification_report(self):
+    def log_classification_report(self, stage):
         predictions, labels = zip(*self.val_step_outputs)
         predictions = torch.cat(predictions)
         labels = torch.cat(labels)
@@ -223,5 +174,31 @@ class TrainingModule(LightningModule):
             if isinstance(metrics, dict):
                 report_table.add_data(label, metrics["precision"], metrics["recall"],
                                       metrics["f1-score"], metrics["support"])
-        self.logger.experiment.log({f"classification_report": report_table})
+        self.logger.experiment.log({f"{stage}_classification_report": report_table})
         self.val_step_outputs.clear()
+
+    def training_step(self, batch, batch_idx):
+        metrics = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='train')
+        self.log_dict(metrics, logger=True, prog_bar=True)
+        return metrics['loss']
+
+    def validation_step(self, batch, batch_idx):
+        metrics = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='val')
+        self.log_dict(metrics, logger=True)
+        return metrics['loss']
+
+    def test_step(self, batch, batch_idx):
+        metrics = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='test')
+        self.log_dict(metrics, logger=True)
+        return metrics['loss']
+
+    def on_validation_epoch_end(self) -> None:
+        self.log_mAP_on_epoch_end('val')
+        self.log_classification_report('val')
+
+    def on_test_epoch_end(self) -> None:
+        self.log_mAP_on_epoch_end('test')
+        self.log_classification_report('test')
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=CONFIG['learning_rate'])

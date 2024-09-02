@@ -11,7 +11,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 # from pytorch_lightning.callbacks import StochasticWeightAveraging
 
 from data_loading.BENv2DataModule import BENv2DataModule
-from model_init import ModelCollection
+from models import ModelCollection
 from utils.config import CONFIG
 
 wandb.require("core")

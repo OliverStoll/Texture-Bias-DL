@@ -14,48 +14,18 @@ from utils.logger import create_logger
 
 
 
-def get_datamodule_bigearthnet(train_transform, val_transform):
-    def get_bigearthnet_keys(dir):
-        files = {"train": "all_train.csv", "validation": "all_val.csv", "test": "all_test.csv"}
-        keys = {}
-        for split, file in files.items():
-            keys[split] = pd.read_csv(f"{dir}/{file}", header=None, names=["name"]
-                                      ).name.to_list()
-        return keys
 
-    return BENv2DataModule(
-        train_transforms=train_transform,
-        eval_transforms=val_transform,
-        keys=get_bigearthnet_keys(dir="/media/storagecube/jonasklotz/BigEarthNet-V2/benv2_splits"),
-        image_lmdb_file="/media/storagecube/jonasklotz/BigEarthNet-V2/BENv2.lmdb",
-        label_file="/media/storagecube/jonasklotz/BigEarthNet-V2/lbls.parquet",
-        s2s1_mapping_file="/media/storagecube/jonasklotz/BigEarthNet-V2/new_s2s1_mapping.parquet",
-        batch_size=CONFIG['batch_size'],
-        num_workers=CONFIG['num_workers'],
-        img_size=CONFIG['datasets']['bigearthnet']['image_size'],
-        interpolation_mode=None
-    )
-
-
-def get_datamodule_imagenet(train_transform, val_transform):
-    return ImageNetDataModule(
-        train_transforms=train_transform,
-        val_transforms=val_transform,
-        data_dir=CONFIG['datasets']['imagenet']['path'],
-        batch_size=CONFIG['batch_size'],
-        num_workers=CONFIG['num_workers'],
-        pin_memory=CONFIG['pin_memory'],
-        train_val_test_split=CONFIG['datasets']['imagenet']['train_val_test_split'],
-    )
 
 
 class DataLoaderCollection:
     log = create_logger("Data Loading")
-    datamodule_init_fns = {
-            "bigearthnet": get_datamodule_bigearthnet,
-            "imagenet": get_datamodule_imagenet
+
+    def __init__(self):
+        self.datamodule_init_fns = {
+            "bigearthnet": self._get_datamodule_bigearthnet,
+            "imagenet": self._get_datamodule_imagenet,
         }
-    default_transforms = {
+        self.default_transforms = {
             'resnet': ResNet50_Weights.DEFAULT.transforms(),
             'efficientnet': EfficientNet_B0_Weights.DEFAULT.transforms(),
             'convnext': ConvNeXt_Tiny_Weights.DEFAULT.transforms(),
@@ -63,11 +33,44 @@ class DataLoaderCollection:
             'swin': Swin_T_Weights.DEFAULT.transforms(),
         }
 
-    def __init__(self):
-        pass
+    def _get_bigearthnet_keys(self, splits_path):
+        files = {"train": "all_train.csv", "validation": "all_val.csv", "test": "all_test.csv"}
+        keys = {}
+        for split, file in files.items():
+            keys[split] = pd.read_csv(f"{splits_path}/{file}", header=None, names=["name"]
+                                      ).name.to_list()
+        return keys
+
+    def _get_datamodule_bigearthnet(self, train_transform, val_transform):
+        return BENv2DataModule(
+            train_transforms=train_transform,
+            eval_transforms=val_transform,
+            keys=self._get_bigearthnet_keys(
+                splits_path="/media/storagecube/jonasklotz/BigEarthNet-V2/benv2_splits"),
+            image_lmdb_file="/media/storagecube/jonasklotz/BigEarthNet-V2/BENv2.lmdb",
+            label_file="/media/storagecube/jonasklotz/BigEarthNet-V2/lbls.parquet",
+            s2s1_mapping_file="/media/storagecube/jonasklotz/BigEarthNet-V2/new_s2s1_mapping.parquet",
+            batch_size=CONFIG['batch_size'],
+            num_workers=CONFIG['num_workers'],
+            img_size=CONFIG['datasets']['bigearthnet']['image_size'],
+            interpolation_mode=None
+        )
+
+    def _get_datamodule_imagenet(self, train_transform, val_transform):
+        return ImageNetDataModule(
+            train_transforms=train_transform,
+            val_transforms=val_transform,
+            data_dir=CONFIG['datasets']['imagenet']['path'],
+            batch_size=CONFIG['batch_size'],
+            num_workers=CONFIG['num_workers'],
+            pin_memory=CONFIG['pin_memory'],
+            train_val_test_split=CONFIG['datasets']['imagenet']['train_val_test_split'],
+        )
 
     def get_dataloader(self, dataset_name, model_name, is_pretrained, train_transform=None, val_transform=None):
-        self.log.debug(f"Initializing dataloader: [{dataset_name.upper()} | {model_name.upper()}{' | Pretrained' if is_pretrained else ''}]")
+        self.log.debug(f"Initializing dataloader: [{dataset_name.upper()} | {model_name.upper()}"
+                       f"{' | Pretrained' if is_pretrained else ''}"
+                       f"{' | Val_Transform' if val_transform else ''}]")
         dm_init_function = self.datamodule_init_fns[dataset_name]
         if dataset_name == "imagenet":
             base_t = self.default_transforms[model_name]

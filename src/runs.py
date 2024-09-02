@@ -9,12 +9,12 @@ from pytorch_lightning.profilers import SimpleProfiler
 from utils.config import ROOT_DIR, CONFIG
 from utils.logger import create_logger
 
-from data_init import DataLoaderCollection
+from datasets import DataLoaderCollection
 from training_module import TrainingModule
-from model_init import ModelCollection
+from models import ModelCollection
 from _util_code._mute_logs import mute_logs
 from sanity_checks.check_gpu import print_gpu_info
-from grid_shuffle import GridShuffleTransform
+from grid_shuffle_transform import GridShuffleTransform
 
 warnings.filterwarnings("ignore",
                         message="Average precision score for one or more classes was `nan`. Ignoring these classes in weighted-average")
@@ -199,15 +199,15 @@ if __name__ == '__main__':
     run_grid_sizes = range(1, 21)
 
 
-    run_models = ['convnext']  # noqa
     run_datasets = ['imagenet']  # noqa
-    run_grid_sizes = [13]  # noqa
+    # run_models = ['convnext']  # noqa
+    # run_grid_sizes = [13]  # noqa
     run_manager = RunManager(
         models=run_models,
         datasets=run_datasets,
         grid_sizes=run_grid_sizes,
         continue_on_error=False,
-        test_run=True,
         train=False,
+        # test_run=True,
     )
     run_manager.execute_runs()
