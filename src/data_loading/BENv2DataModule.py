@@ -25,6 +25,7 @@ import pandas as pd
 class BENv2DataModule(LightningDataModule):
     # This setting is dependent on the system being used
     pin_memory = True  # CHANGED BY ME
+    use_eval_transform_for_val = True
 
     def __init__(
             self,
@@ -168,7 +169,7 @@ class BENv2DataModule(LightningDataModule):
                 bands=self.bands,
                 process_bands_fn=self.process_bands_fn,
                 process_labels_fn=self.process_labels_fn,
-                transforms=self.eval_transforms,
+                transforms=self.eval_transforms if self.use_eval_transform_for_val else self.train_transforms,
                 keys=self.keys["validation"],
                 return_patchname=False,
                 verbose=self.verbose,

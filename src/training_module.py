@@ -32,7 +32,7 @@ BEN_LABELS = {
 
 
 
-class ModelModule(LightningModule):
+class TrainingModule(LightningModule):
     loss_fns = {
         'multiclass': nn.CrossEntropyLoss(),
         'multilabel': nn.BCEWithLogitsLoss()
@@ -123,6 +123,8 @@ class ModelModule(LightningModule):
                 metric_classes = {f"{metric}_{BEN_LABELS[i][1]}": value for i, value in
                                   enumerate(metrics[f"{metric}_classes"])}
                 self.log_dict(metric_classes, **self.log_train_metrics)
+        if batch_idx == 0:
+            self._log_image(batch, stage='train')  # UNTESTED
         return metrics['loss']
 
     def validation_step(self, batch, batch_idx):
@@ -136,7 +138,7 @@ class ModelModule(LightningModule):
                                   enumerate(metrics[f"{metric}_classes"])}
                 self.log_dict(metric_classes, **self.log_val_metrics)
         if batch_idx == 0:
-            self._log_image(batch)
+            self._log_image(batch, stage='val')
         return metrics['loss']
 
     def test_step(self, batch, batch_idx):
@@ -150,11 +152,10 @@ class ModelModule(LightningModule):
                                   enumerate(metrics[f"{metric}_classes"])}
                 self.log_dict(metric_classes, **self.log_val_metrics)
         if batch_idx == 0:
-            self._log_image(batch)
+            self._log_image(batch, stage='test')
         return metrics['loss']
 
     def on_validation_epoch_end(self) -> None:
-        # log classification report
         self._log_classification_report()
         if self.task == 'multilabel':
             self.log('val_mAP', self.map_metric_weighted.compute(), logger=True, on_epoch=True)
@@ -181,11 +182,8 @@ class ModelModule(LightningModule):
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=CONFIG['learning_rate'])
 
-    def _log_image(self, batch, idx=0):
-        images, labels = batch
-        image = images[idx]
+    def _get_log_image_caption(self, image, labels, idx):
         raw_prediction = self.forward(image.unsqueeze(idx))
-
         if self.task == 'multilabel':
             label = [bool(label) for label in labels[idx].tolist()]
             prediction = torch.sigmoid(raw_prediction)
@@ -197,25 +195,21 @@ class ModelModule(LightningModule):
                        prediction[i] and not label[i]]
             fn_pred = [BEN_LABELS[i][1] or BEN_LABELS[i][0] for i in pred_range if
                        not prediction[i] and label[i]]
-            tn_pred = [BEN_LABELS[i][1] or BEN_LABELS[i][0] for i in pred_range if
-                       not prediction[i] and not label[i]]
             caption = f"TP: {tp_pred}\n, FP: {fp_pred}\n, FN: {fn_pred}"
-            # create table
-            column_names = ["True Positive", "False Positive", "False Negative", "True Negative"]
-            table = wandb.Table(columns=column_names)
-            for _tuple in itertools.zip_longest(tp_pred, fp_pred, fn_pred, tn_pred, fillvalue=None):
-                table.add_data(*_tuple)
-            self.logger.experiment.log({f"table_{wandb.run.step}": table})
         elif self.task == 'multiclass':
             label = labels[idx].item()
             prediction = torch.softmax(raw_prediction, dim=1).tolist()
             caption = f"Prediction: {prediction}, Label: {label}"
         else:
             raise ValueError("Task not correctly passed through config")
+        return caption
 
+    def _log_image(self, batch, stage, idx=0):
+        images, labels = batch
+        image = images[idx]
+        caption = self._get_log_image_caption(image, labels, idx)
         image = image if self.dataset_name == 'imagenet' else images[idx][[3, 2, 1], :, :]
-
-        self.logger.experiment.log({"image": wandb.Image(data_or_path=image, caption=caption)})
+        self.logger.experiment.log({f"{stage}_image": wandb.Image(data_or_path=image, caption=caption)})
 
     def _log_classification_report(self):
         predictions, labels = zip(*self.val_step_outputs)

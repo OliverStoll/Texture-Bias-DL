@@ -9,6 +9,10 @@ num_workers: 40
 pin_memory: True
 score_average: 'micro'
 
+# paths
+output_dir: '/home/olivers/colab-master-thesis/output'
+checkpoint_dir: '/media/storagecube/olivers/logs/checkpoints'
+
 
 # dataset parameters
 datasets:
