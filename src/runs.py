@@ -12,7 +12,7 @@ from utils.logger import create_logger
 from data_init import DataLoaderCollection
 from training_module import TrainingModule
 from model_init import ModelCollection
-from _util_code import _mute_logs  # noqa (run helper code)
+from _util_code._mute_logs import mute_logs
 from sanity_checks.check_gpu import print_gpu_info
 from grid_shuffle import GridShuffleTransform
 
@@ -26,13 +26,13 @@ class Run:
         Abbreviations: dl = dataloader
                        grid_shuffle = the number of grid squares for width and height (4 -> 4x4)
     """
-    log = logging.getLogger("Run")
     dl_collection = DataLoaderCollection()
     model_collection = ModelCollection()
 
     def __init__(self, dataset_name, model_name, do_training=True, pretrained=False, val_transform=None,
                  grid_shuffle=None):
         # arguments
+        self.log = logging.getLogger("Run")
         self.dataset_name = dataset_name
         self.model_name = model_name
         self.do_training = do_training
@@ -103,7 +103,6 @@ class Run:
                                                                 dataset_name=self.dataset_name,
                                                                 dataset_config=self.data_config)
 
-
     def execute(self):
         self.log.info(f"Starting Run for {self.model_name} on {self.dataset_name} ({DEVICES})")
         if self.pretrained:
@@ -123,18 +122,22 @@ class Run:
 
 class RunManager:
     log = create_logger("Main")
+    test_run_batches = 500
 
     def __init__(self, models=None, datasets=None, continue_on_error=True, grid_sizes=None,
-                 train='auto', pretrained='auto'):
+                 train='auto', pretrained='auto', test_run=False):
         self.models = models or list(os.getenv("MODEL"))
         self.datasets = datasets or list(os.getenv("DATASET"))
         self.continue_on_error = continue_on_error
         self.grid_sizes = grid_sizes
-        self.grid_shuffle_transforms = self._get_grid_shuffle_transforms(grid_sizes)
         self.train = train
         self.pretrained = pretrained
+        self.grid_shuffle_transforms = self._get_grid_shuffle_transforms(grid_sizes)
         self._check_input()
         seed_everything(42)
+        mute_logs()
+        if test_run:
+            self.change_config_for_test_run()
 
     def _get_grid_shuffle_transforms(self, grid_sizes):
         """create a list of tuples, with grid size and the equivalent transform"""
@@ -151,6 +154,12 @@ class RunManager:
     def _log_start(self):
         self.log.info(f"\n\n\n\tSTARTING RUNS FOR {self.models} ON {self.datasets} "
                       f"(PT: {self.pretrained} - Grid sizes: {self.grid_sizes}\n\n")
+
+    def change_config_for_test_run(self):
+        self.log.warning(f"Test-Run with only {self.test_run_batches} batches each")
+        CONFIG['limit_train_batches'] = self.test_run_batches
+        CONFIG['limit_val_batches'] = self.test_run_batches
+        CONFIG['limit_test_batches'] = self.test_run_batches
 
     def execute_runs(self):
         for dataset in self.datasets:
@@ -187,17 +196,18 @@ if __name__ == '__main__':
     DEVICES = determine_gpu()
     run_models = ['resnet', 'vit', 'efficientnet', 'swin', 'convnext']
     run_datasets = ['bigearthnet', 'imagenet']
+    run_grid_sizes = range(1, 21)
 
 
     run_models = ['convnext']  # noqa
     run_datasets = ['imagenet']  # noqa
-    run_grid_sizes = range(16, 21)  # TODO: run remaining tests on imagenet
-    # run_grid_sizes = [1, 4, 8]  # noqa
+    run_grid_sizes = [13]  # noqa
     run_manager = RunManager(
         models=run_models,
         datasets=run_datasets,
         grid_sizes=run_grid_sizes,
-        # train=False,
-        # continue_on_error=False
+        continue_on_error=False,
+        test_run=True,
+        train=False,
     )
     run_manager.execute_runs()
