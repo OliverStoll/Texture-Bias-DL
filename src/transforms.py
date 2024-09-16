@@ -29,3 +29,11 @@ class TransformFactory:
         ]
         self.log.info(f"Created {len(transform_dicts)} transforms of type {transform_type} with parameter {param_values}.")
         return transform_dicts
+
+
+empty_transforms = [{
+    'type': None,
+    'param': None,
+    'param_name': None,
+    'transform': None,
+}]
