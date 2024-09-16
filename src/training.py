@@ -1,10 +1,9 @@
-import itertools
 import torch.nn as nn
-
 import torch
 import wandb
 from pytorch_lightning import LightningModule
 from torchmetrics import Accuracy, Precision, Recall, F1Score, AveragePrecision
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from sklearn.metrics import classification_report
 from utils.config import CONFIG
 
@@ -31,12 +30,9 @@ BEN_LABELS = {
 }
 
 
-
 class TrainingModule(LightningModule):
-    loss_fns = {
-        'multiclass': nn.CrossEntropyLoss(),
-        'multilabel': nn.BCEWithLogitsLoss()
-    }
+    loss_fns = {'multiclass': nn.CrossEntropyLoss(), 'multilabel': nn.BCEWithLogitsLoss()}
+    optimizer = torch.optim.Adam
 
     def __init__(self, dataset_name, dataset_config, model):
         super().__init__()
@@ -55,7 +51,8 @@ class TrainingModule(LightningModule):
         self.precision_micro = Precision(**metric_data, average='micro')
         self.recall_micro = Recall(**metric_data, average='micro')
         self.f1_score_micro = F1Score(**metric_data, average='micro')
-        self.map_metric_micro = AveragePrecision(**metric_data, average='micro')  # noqa
+        map_micro_avg = 'micro' if dataset_name == 'bigearthnet' else 'weighted'  # TODO: fix?
+        self.map_metric_micro = AveragePrecision(**metric_data, average=map_micro_avg)  # noqa
         # macro metrics
         self.accuracy_macro = Accuracy(**metric_data, average='macro')
         self.precision_macro = Precision(**metric_data, average='macro')
@@ -71,9 +68,6 @@ class TrainingModule(LightningModule):
         # save validation predictions for classification report
         self.val_step_outputs = []
         self.save_hyperparameters(ignore=['model', 'loss_fn'])
-
-    def forward(self, x):
-        return self.model(x)
 
     def _get_prediction(self, unnormalized_logits):
         if self.task == 'multiclass':
@@ -95,36 +89,35 @@ class TrainingModule(LightningModule):
 
     def calculate_metrics(self, batch, batch_idx, stage):
         images, labels_float = batch
+        labels = labels_float.int()
         unnormalized_logits = self(images)
         loss = self.loss_fn(unnormalized_logits, labels_float)
-        labels = labels_float.int()
         predictions, predictions_binary = self._get_prediction(unnormalized_logits)
         if stage == 'val' or stage == 'test':
             self._calculate_map_metrics(predictions, predictions_binary, labels)
         if batch_idx == 0:
-            self._log_image(batch, stage=stage)  # UNTESTED
+            self.log_image(batch, stage=stage)
 
-        # todo: add stage to metric names
         metrics = {
             f'{stage}_loss': loss,
-            f'{stage}_f1': self.f1_score_micro(predictions, labels),
-            f'{stage}_precision': self.precision_micro(predictions, labels),
-            f'{stage}_recall': self.recall_micro(predictions, labels),
-            f'{stage}_accuracy': self.accuracy_micro(predictions, labels),
+            f'{stage}_f1_micro': self.f1_score_micro(predictions, labels),
+            f'{stage}_precision_micro': self.precision_micro(predictions, labels),
+            f'{stage}_recall_micro': self.recall_micro(predictions, labels),
+            f'{stage}_accuracy_micro': self.accuracy_micro(predictions, labels),
             f'{stage}_f1_macro': self.f1_score_macro(predictions, labels),
             f'{stage}_precision_macro': self.precision_macro(predictions, labels),
             f'{stage}_recall_macro': self.recall_macro(predictions, labels),
             f'{stage}_accuracy_macro': self.accuracy_macro(predictions, labels),
-            f'{stage}_f1_classes': self.f1_score_classes(predictions, labels),
-            f'{stage}_precision_classes': self.precision_classes(predictions, labels),
-            f'{stage}_recall_classes': self.recall_classes(predictions, labels),
-            f'{stage}_accuracy_classes': self.accuracy_classes(predictions, labels)
+            # f'{stage}_f1_classes': self.f1_score_classes(predictions, labels),
+            # f'{stage}_precision_classes': self.precision_classes(predictions, labels),
+            # f'{stage}_recall_classes': self.recall_classes(predictions, labels),
+            # f'{stage}_accuracy_classes': self.accuracy_classes(predictions, labels)
         }
         return metrics
 
     def log_mAP_on_epoch_end(self, stage):
         if self.task == 'multilabel':
-            self.log(f'{stage}_mAP', self.map_metric_micro.compute(), logger=True, on_epoch=True)
+            self.log(f'{stage}_mAP_micro', self.map_metric_micro.compute(), logger=True, on_epoch=True)
             self.log(f'{stage}_mAP_macro', self.map_metric_macro.compute(), logger=True, on_epoch=True)
             map_classes = self.map_metric_classes.compute()
             map_classes_dict = {f'{stage}_mAP_{BEN_LABELS[i][1]}': map_class for i, map_class in enumerate(map_classes)}
@@ -140,22 +133,20 @@ class TrainingModule(LightningModule):
             prediction = torch.sigmoid(raw_prediction)
             prediction = prediction.gt(0.5).tolist()[0]
             pred_range = range(len(prediction))
-            tp_pred = [BEN_LABELS[i][1] or BEN_LABELS[i][0] for i in pred_range if
-                       prediction[i] and label[i]]
-            fp_pred = [BEN_LABELS[i][1] or BEN_LABELS[i][0] for i in pred_range if
-                       prediction[i] and not label[i]]
-            fn_pred = [BEN_LABELS[i][1] or BEN_LABELS[i][0] for i in pred_range if
-                       not prediction[i] and label[i]]
+            tp_pred = [BEN_LABELS[i][1] for i in pred_range if prediction[i] and label[i]]
+            fp_pred = [BEN_LABELS[i][1] for i in pred_range if prediction[i] and (not label[i])]
+            fn_pred = [BEN_LABELS[i][1] for i in pred_range if (not prediction[i]) and label[i]]
             caption = f"TP: {tp_pred}\n, FP: {fp_pred}\n, FN: {fn_pred}"
         elif self.task == 'multiclass':
             label = labels[idx].item()
             prediction = torch.softmax(raw_prediction, dim=1).tolist()
+            prediction = [round(p, 1) for p in prediction[0]]
             caption = f"Prediction: {prediction}, Label: {label}"
         else:
             raise ValueError("Task not correctly passed through config")
         return caption
 
-    def _log_image(self, batch, stage, idx=0):
+    def log_image(self, batch, stage, idx=0):
         images, labels = batch
         image = images[idx]
         caption = self._get_log_image_caption(image, labels, idx)
@@ -177,20 +168,23 @@ class TrainingModule(LightningModule):
         self.logger.experiment.log({f"{stage}_classification_report": report_table})
         self.val_step_outputs.clear()
 
+    def forward(self, x):
+        return self.model(x)
+
     def training_step(self, batch, batch_idx):
         metrics = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='train')
         self.log_dict(metrics, logger=True, prog_bar=True)
-        return metrics['loss']
+        return metrics['train_loss']
 
     def validation_step(self, batch, batch_idx):
         metrics = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='val')
         self.log_dict(metrics, logger=True)
-        return metrics['loss']
+        return metrics['val_loss']
 
     def test_step(self, batch, batch_idx):
         metrics = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='test')
         self.log_dict(metrics, logger=True)
-        return metrics['loss']
+        return metrics['test_loss']
 
     def on_validation_epoch_end(self) -> None:
         self.log_mAP_on_epoch_end('val')
@@ -201,4 +195,6 @@ class TrainingModule(LightningModule):
         self.log_classification_report('test')
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=CONFIG['learning_rate'])
+        optimizer = self.optimizer(self.parameters(), lr=CONFIG['learning_rate'])
+        scheduler = CosineAnnealingLR(optimizer, T_max=50, eta_min=1e-5)
+        return [optimizer], [scheduler]

@@ -21,7 +21,7 @@ class DataLoaderCollection:
     log = create_logger("Data Loading")
 
     def __init__(self):
-        self.datamodule_init_fns = {
+        self.datamodule_getter = {
             "bigearthnet": self._get_datamodule_bigearthnet,
             "imagenet": self._get_datamodule_imagenet,
         }
@@ -67,36 +67,28 @@ class DataLoaderCollection:
             train_val_test_split=CONFIG['datasets']['imagenet']['train_val_test_split'],
         )
 
-    def get_dataloader(self, dataset_name, model_name, is_pretrained, train_transform=None, val_transform=None):
+    def add_default_transform(self, model_name, train_transform, val_transform):
+        base_t = self.default_transforms[model_name]
+        train_transform = base_t if train_transform is None else Compose([base_t, train_transform])
+        val_transform = base_t if val_transform is None else Compose([base_t, val_transform])
+        return train_transform, val_transform
+
+    def get_dataloader(self, dataset_name, model_name, train_transform=None, val_transform=None):
         self.log.debug(f"Initializing dataloader: [{dataset_name.upper()} | {model_name.upper()}"
-                       f"{' | Pretrained' if is_pretrained else ''}"
                        f"{' | Val_Transform' if val_transform else ''}]")
-        dm_init_function = self.datamodule_init_fns[dataset_name]
         if dataset_name == "imagenet":
-            base_t = self.default_transforms[model_name]
-            train_transform = base_t if train_transform is None else Compose([base_t, train_transform])
-            val_transform = base_t if val_transform is None else Compose([base_t, val_transform])
-        datamodule = dm_init_function(train_transform=train_transform, val_transform=val_transform)
+            train_transform, val_transform = self.add_default_transform(
+                model_name=model_name,
+                train_transform=train_transform,
+                val_transform=val_transform,
+            )
+        datamodule = self.datamodule_getter[dataset_name](
+            train_transform=train_transform,
+            val_transform=val_transform
+        )
         datamodule.setup()
         return datamodule.train_dataloader(), datamodule.val_dataloader(), datamodule.test_dataloader()
-
-    def get_all_dataloaders(self, dataset_names, model_names):
-        dataloaders = {}
-        for dataset in dataset_names:
-            dataloaders[dataset] = {}
-            for model_name in model_names:
-                is_pretrained = (dataset == "imagenet")
-                train_dl, val_dl, test_dl = self.get_dataloader(dataset, model_name, is_pretrained)
-                dataloaders[dataset][model_name] = {"train": train_dl, "val": val_dl, "test": test_dl}
-        return dataloaders
 
 
 if __name__ == "__main__":
     dl_collection = DataLoaderCollection()
-    models = ['resnet', 'efficientnet', 'convnext', 'vit', 'swin']
-    datasets = ['bigearthnet']
-    models = ['resnet']
-    all_dl = dl_collection.get_all_dataloaders(dataset_names=datasets, model_names=models)
-    dl = all_dl['bigearthnet']['resnet']
-    check_dataloader(dl['train'], dl['val'], dl['test'])
-    print(all_dl)

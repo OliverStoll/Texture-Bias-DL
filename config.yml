@@ -1,17 +1,18 @@
 # training parameters
-epochs: 5
+epochs: 10
 limit_train_batches:
 limit_val_batches:
 limit_test_batches:
-learning_rate: 0.001
+learning_rate: 0.0001
 batch_size: 32
-num_workers: 40
+num_workers: 30
 pin_memory: True
 score_average: 'micro'
 
 # paths
 output_dir: '/home/olivers/colab-master-thesis/output'
 checkpoint_dir: '/media/storagecube/olivers/logs/checkpoints'
+example_image: '/media/storagecube/data/shared/datasets/ImageNet-2012/n01440764/n01440764_10026.JPEG'
 
 
 # dataset parameters
@@ -19,7 +20,7 @@ datasets:
   bigearthnet:
     task: multilabel
     input_channels: 14
-    image_size: 224
+    image_size: 112
     num_classes:
     num_labels: 19
   imagenet:

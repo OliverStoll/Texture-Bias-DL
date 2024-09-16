@@ -2,8 +2,8 @@ import cv2
 from torchvision import transforms
 from torchvision.transforms import Compose
 
-from grid_shuffle import GridShuffleTransform
-from data_init import DataLoaderCollection
+from transforms.grid_shuffle_transform import GridShuffleTransform
+from datasets import DataLoaderCollection
 
 
 def visualize_normalized_image(image, dataset):

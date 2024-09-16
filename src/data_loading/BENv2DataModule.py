@@ -25,7 +25,7 @@ import pandas as pd
 class BENv2DataModule(LightningDataModule):
     # This setting is dependent on the system being used
     pin_memory = True  # CHANGED BY ME
-    use_eval_transform_for_val = True
+    use_eval_transform_for_val = False  # CREATED BY ME
 
     def __init__(
             self,

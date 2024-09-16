@@ -6,13 +6,16 @@ import numpy as np
 
 
 class ImageNetDataModule(LightningDataModule):
+    timeout = 600
+
     def __init__(self, data_dir: str, batch_size: int, num_workers: int, train_transforms, val_transforms,
-                 pin_memory: bool = True, train_val_test_split=(0.7, 0.15, 0.15)):
+                 pin_memory: bool = True, train_val_test_split=(0.7, 0.15, 0.15), shuffle=False):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.pin_memory = pin_memory
+        self.shuffle = shuffle
         self.train_val_test_split = train_val_test_split
         self.train_transform = train_transforms
         self.val_transform = val_transforms
@@ -69,12 +72,12 @@ class ImageNetDataModule(LightningDataModule):
 
     def train_dataloader(self):
         return DataLoader(self.imagenet_train, batch_size=self.batch_size, shuffle=True,
-                          num_workers=self.num_workers, pin_memory=self.pin_memory)
+                          num_workers=self.num_workers, pin_memory=self.pin_memory, timeout=self.timeout)
 
     def val_dataloader(self):
         return DataLoader(self.imagenet_val, batch_size=self.batch_size, shuffle=False,
-                          num_workers=self.num_workers, pin_memory=self.pin_memory)
+                          num_workers=self.num_workers, pin_memory=self.pin_memory, timeout=self.timeout)
 
     def test_dataloader(self):
         return DataLoader(self.imagenet_test, batch_size=self.batch_size, shuffle=False,
-                          num_workers=self.num_workers, pin_memory=self.pin_memory)
+                          num_workers=self.num_workers, pin_memory=self.pin_memory, timeout=self.timeout)
