@@ -13,7 +13,7 @@ class ModelCollection:
         'swin': {'name': 'swin_tiny_patch4_window7_224', 'first_conv': 'patch_embed.proj', 'out_layer': 'head.fc'},
     }
 
-    def get_in_out_channels(self, model, data_conf):
+    def get_in_out_channels(self, data_conf):
         in_channels = data_conf['input_channels']
         in_channels = in_channels if in_channels != self.default_in_channels else None
         if data_conf['task'] == 'multiclass':
@@ -25,11 +25,16 @@ class ModelCollection:
         out_features = out_features if out_features != self.default_out_features else None
         return in_channels, out_features
 
-    def get_model(self, model_name: str, data_conf: dict, pretrained: bool):
-        architecture = self.model_dict[model_name]['name']
-        in_channels, out_features = self.get_in_out_channels(model_name, data_conf)
-        model = timm.create_model(architecture, pretrained=pretrained, num_classes=out_features, in_chans=in_channels)
-
+    def get_model(self, model_name: str, dataset_config: dict, pretrained: bool):
+        full_model_name = self.model_dict[model_name]['name']
+        in_channels, out_features = self.get_in_out_channels(dataset_config)
+        model = timm.create_model(
+            model_name=full_model_name,
+            pretrained=pretrained,
+            in_chans=in_channels,
+            num_classes=out_features,
+            img_size=dataset_config['image_size']
+        )
         return model
 
 
