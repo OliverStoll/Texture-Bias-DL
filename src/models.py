@@ -13,49 +13,6 @@ class ModelCollection:
         'swin': {'name': 'swin_tiny_patch4_window7_224', 'first_conv': 'patch_embed.proj', 'out_layer': 'head.fc'},
     }
 
-    def split_layer_name(self, layer_name):
-        """Split a layer name using '.' and '[' as separators. Returns a list of attribute parts."""
-        parts = []
-        current_part = ''
-        for char in layer_name:
-            if char == '.' or char == '[' or char == ']':
-                if current_part:
-                    parts.append(current_part)
-                    current_part = ''
-            else:
-                current_part += char
-        if current_part:
-            parts.append(current_part)
-        return parts
-
-    def get_layer(self, model, layer_name):
-        name_parts = self.split_layer_name(layer_name)
-        layer = getattr(model, name_parts[0])
-        for part in name_parts[1:]:
-            if part.isdigit():  # If layer is a list
-                layer = layer[int(part)]
-            else:               # If layer is an attribute
-                layer = getattr(layer, part)
-        return layer
-
-    def set_layer(self, model, layer_name, layer):
-        """Set nested attributes and indices using a string path."""
-        name_parts = self.split_layer_name(layer_name)
-        temp_layer = model
-        try:
-            for part in name_parts[:-1]:
-                if part.isdigit():
-                    temp_layer = temp_layer[int(part)]
-                else:
-                    temp_layer = getattr(temp_layer, part)
-            last_attribute = name_parts[-1]
-            if last_attribute.isdigit():
-                temp_layer[int(last_attribute)] = layer
-            else:
-                setattr(temp_layer, last_attribute, layer)
-        except (AttributeError, IndexError, TypeError) as e:
-            raise AttributeError(f"Failed to set attribute '{layer_name}': {e}")
-
     def get_in_out_channels(self, model, data_conf):
         in_channels = data_conf['input_channels']
         in_channels = in_channels if in_channels != self.default_in_channels else None
