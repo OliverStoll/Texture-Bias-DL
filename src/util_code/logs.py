@@ -10,5 +10,4 @@ def mute_logs():
     warnings.filterwarnings("ignore", category=UserWarning,
                             module="lightning_fabric.plugins.environments.slurm")
     warnings.filterwarnings("ignore",
-                            message="Average precision score for one or more classes was `nan`. "
-                                    "Ignoring these classes in weighted-average")
+                            message="Average precision score for one or more classes was `nan`")

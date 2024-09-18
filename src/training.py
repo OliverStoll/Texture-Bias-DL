@@ -33,6 +33,7 @@ BEN_LABELS = {
 class TrainingModule(LightningModule):
     loss_fns = {'multiclass': nn.CrossEntropyLoss(), 'multilabel': nn.BCEWithLogitsLoss()}
     optimizer = torch.optim.Adam
+    log_mAP_classes = False  # DISABLED DUE TO CLUTTER
 
     def __init__(self, dataset_name, dataset_config, model):
         super().__init__()
@@ -121,7 +122,8 @@ class TrainingModule(LightningModule):
             self.log(f'{stage}_mAP_macro', self.map_metric_macro.compute(), logger=True, on_epoch=True)
             map_classes = self.map_metric_classes.compute()
             map_classes_dict = {f'{stage}_mAP_{BEN_LABELS[i][1]}': map_class for i, map_class in enumerate(map_classes)}
-            self.log_dict(map_classes_dict, on_epoch=True, logger=True)
+            if self.log_mAP_classes:
+                self.log_dict(map_classes_dict, on_epoch=True, logger=True)
             self.map_metric_micro.reset()
             self.map_metric_macro.reset()
             self.map_metric_classes.reset()
@@ -173,7 +175,7 @@ class TrainingModule(LightningModule):
 
     def training_step(self, batch, batch_idx):
         metrics = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='train')
-        self.log_dict(metrics, logger=True, prog_bar=True)
+        self.log_dict(metrics, logger=True)
         return metrics['train_loss']
 
     def validation_step(self, batch, batch_idx):

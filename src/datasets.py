@@ -3,34 +3,25 @@ from torchvision.models import (ResNet50_Weights, EfficientNet_B0_Weights, ViT_B
                                 Swin_T_Weights, ConvNeXt_Tiny_Weights)
 from torchvision import transforms
 from torchvision.transforms import Compose
+from timm.data import resolve_data_config
+from timm.data.transforms_factory import create_transform
 
 from data_loading.BENv2DataModule import BENv2DataModule
 from data_loading.ImageNetDataModule import ImageNetDataModule
+from models import ModelCollection
 from sanity_checks.check_dataloader import check_dataloader
 from utils.config import CONFIG
 from utils.logger import create_logger
 
 
-
-
-
-
-
-
 class DataLoaderCollection:
     log = create_logger("Data Loading")
+    model_collection = ModelCollection()
 
     def __init__(self):
         self.datamodule_getter = {
             "bigearthnet": self._get_datamodule_bigearthnet,
             "imagenet": self._get_datamodule_imagenet,
-        }
-        self.default_transforms = {
-            'resnet': ResNet50_Weights.DEFAULT.transforms(),
-            'efficientnet': EfficientNet_B0_Weights.DEFAULT.transforms(),
-            'convnext': ConvNeXt_Tiny_Weights.DEFAULT.transforms(),
-            'vit': ViT_B_16_Weights.DEFAULT.transforms(),
-            'swin': Swin_T_Weights.DEFAULT.transforms(),
         }
 
     def _get_bigearthnet_keys(self, splits_path):
@@ -67,20 +58,33 @@ class DataLoaderCollection:
             train_val_test_split=CONFIG['datasets']['imagenet']['train_val_test_split'],
         )
 
-    def add_default_transform(self, model_name, train_transform, val_transform):
-        base_t = self.default_transforms[model_name]
-        train_transform = base_t if train_transform is None else Compose([base_t, train_transform])
-        val_transform = base_t if val_transform is None else Compose([base_t, val_transform])
-        return train_transform, val_transform
+    def get_default_transform(self, model_name):
+        dataset_config = CONFIG['datasets']['imagenet']
+        model = self.model_collection.get_model(model_name, dataset_config=dataset_config,
+                                                pretrained=False)
+        config = resolve_data_config({}, model=model)
+        transform = create_transform(**config)
+        return transform
+
+    def combine_input_with_default_transform(self, model_name, additional_train_transform,
+                                             additional_val_transform):
+        base_t = self.get_default_transform(model_name=model_name)
+        additional_train_transform = base_t if additional_train_transform is None else Compose(
+            [base_t, additional_train_transform
+         ])
+        additional_val_transform = base_t if additional_val_transform is None else Compose(
+            [base_t, additional_val_transform
+         ])
+        return additional_train_transform, additional_val_transform
 
     def get_dataloader(self, dataset_name, model_name, train_transform=None, val_transform=None):
         self.log.debug(f"Initializing dataloader: [{dataset_name.upper()} | {model_name.upper()}"
                        f"{' | Val_Transform' if val_transform else ''}]")
         if dataset_name == "imagenet":
-            train_transform, val_transform = self.add_default_transform(
+            train_transform, val_transform = self.combine_input_with_default_transform(
                 model_name=model_name,
-                train_transform=train_transform,
-                val_transform=val_transform,
+                additional_train_transform=train_transform,
+                additional_val_transform=val_transform,
             )
         datamodule = self.datamodule_getter[dataset_name](
             train_transform=train_transform,
@@ -92,3 +96,4 @@ class DataLoaderCollection:
 
 if __name__ == "__main__":
     dl_collection = DataLoaderCollection()
+    dl_collection.get_default_transform("resnet")

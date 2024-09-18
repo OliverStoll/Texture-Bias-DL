@@ -1,5 +1,5 @@
 # training parameters
-epochs: 10
+epochs: 1
 limit_train_batches:
 limit_val_batches:
 limit_test_batches:
@@ -20,7 +20,7 @@ datasets:
   bigearthnet:
     task: multilabel
     input_channels: 14
-    image_size: 112
+    image_size: 128
     num_classes:
     num_labels: 19
   imagenet:

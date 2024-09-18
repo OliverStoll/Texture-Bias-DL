@@ -1,7 +1,6 @@
 import os
 import wandb
 import logging
-import warnings
 from pytorch_lightning import seed_everything
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import WandbLogger
@@ -9,11 +8,12 @@ from pytorch_lightning.profilers import SimpleProfiler
 from pytorch_lightning.callbacks import ModelCheckpoint
 from utils.config import ROOT_DIR, CONFIG
 from utils.logger import create_logger
-from typing import Literal
+from random import randint
 
 from datasets import DataLoaderCollection
 from training import TrainingModule
 from models import ModelCollection
+from transforms import empty_transforms
 from util_code.logs import mute_logs
 from sanity_checks.check_gpu import print_gpu_info
 
@@ -88,7 +88,7 @@ class Run:
                              group=self.dataset_name,
                              tags=logger_tags,
                              save_dir=self.logs_path,
-                             version=f"-{self.run_name}")
+                             version=f"-{self.run_name}-{randint(0, 9999):04d}")
         return logger
 
     def _init_trainer(self):
@@ -103,7 +103,7 @@ class Run:
             logger=self.logger,
             profiler=self.profiler,
             devices=self.devices,
-            callbacks=[checkpoint_callback],
+            callbacks=[checkpoint_callback] if self.do_training else [],
             limit_train_batches=CONFIG['limit_train_batches'],
             limit_val_batches=CONFIG['limit_val_batches'],
             limit_test_batches=CONFIG['limit_test_batches'],
@@ -136,25 +136,21 @@ class Run:
         return model_module
 
     def execute(self):
-        self.log.info(f"Starting Run for {self.model_name} on {self.dataset_name} ({self.devices})")
         if self.pretrained:
-            self.log.info(f"Pretrained Test: {self.run_name}")
             self.trainer.test(self.model_module, self.test_dl)
         if self.pretrained is False and self.do_training is False:
-            self.log.info(f"Checkpointed Test: {self.run_name}")
             self.model_module = self.load_checkpoint()
             self.trainer.test(self.model_module, self.test_dl)
         if self.do_training:
-            self.log.info(f"Training: {self.run_name}")
             self.trainer.fit(self.model_module, self.train_dl, self.val_dl)
             self.trainer.test(self.model_module, self.test_dl)
         wandb.finish()
-        self.log.info("Run finished")
+        self.log.debug("Run finished")
 
 
 class RunManager:
     log = create_logger("Main")
-    test_run_batches = 500
+    test_run_batches = 25
 
     def __init__(
             self,
@@ -162,28 +158,31 @@ class RunManager:
             models=None,
             datasets=None,
             continue_on_error=False,
-            train='auto',
+            train=None,
             pretrained='auto',
             test_run=False,
-            device=None
+            device=None,
     ):
         self.models = models or list(os.getenv("MODEL"))
         self.datasets = datasets or list(os.getenv("DATASET"))
         assert self.models is not None, "Models not specified"
         assert self.datasets is not None, "Datasets not specified"
-        self.val_transforms = val_transforms
+        self.val_transforms = val_transforms or empty_transforms
         # settings
         self.continue_on_error = continue_on_error
         self.train = train
         self.pretrained = pretrained
         self.device = self.determine_gpu() if device is None else [device]
+        utilization = print_gpu_info(self.device)
+        if int(utilization) > 0:
+            self.log.warning(f"GPU {self.device} is already in use")
         seed_everything(42)
         mute_logs()
+        self._log_start()
         if test_run:
             self.change_config_for_test_run()
 
     def determine_gpu(self):
-        print_gpu_info()
         devices = [int(os.getenv("MY_DEVICE", "-1"))]
         if devices == [-1]:
             devices = [int(input("ENTER GPU INDEX: "))]
@@ -196,24 +195,24 @@ class RunManager:
 
     def change_config_for_test_run(self):
         self.log.warning(f"Test-Run with only {self.test_run_batches} batches each")
-        CONFIG['limit_train_batches'] = self.test_run_batches
+        CONFIG['limit_train_batches'] = self.test_run_batches * 2
         CONFIG['limit_val_batches'] = self.test_run_batches
         CONFIG['limit_test_batches'] = self.test_run_batches
 
     def execute_runs(self):
         number_of_runs = len(self.models) * len(self.datasets) * len(self.val_transforms)
-        self.log.info(f"Starting {number_of_runs} runs on [{self.device}]")
+        self.log.info(f"Starting {number_of_runs} runs on GPU: {self.device}")
         run_idx = 0
         for dataset in self.datasets:
             pretrained = (dataset == 'imagenet') if self.pretrained == 'auto' else self.pretrained
-            train = not pretrained if self.train == 'auto' else self.train
+            train = (not pretrained) if self.train is None else self.train
             for model in self.models:
                 for val_transform_dict in self.val_transforms:
                     try:
                         run_idx += 1
                         self.log.info(f"[{run_idx}/{number_of_runs}] Starting Run "
-                                      f"[{dataset}-{model}-{val_transform_dict['type']}"
-                                      f"-{val_transform_dict['param']}]")
+                                      f"[{dataset} | {model} | PT:{pretrained} | {val_transform_dict['type']}"
+                                      f" | {val_transform_dict['param']}]")
                         run = Run(dataset_name=dataset,
                                   model_name=model,
                                   do_training=train,
@@ -227,6 +226,7 @@ class RunManager:
                         del run
                     except Exception as e:
                         self.log.error(f"Run failed for {model} on {dataset}", e)
+                        wandb.finish()
                         if self.continue_on_error:
                             self.log.info(f"Continung with next Run")
                         else:
@@ -234,16 +234,17 @@ class RunManager:
 
 
 if __name__ == '__main__':
-    run_models = ['vit', 'efficientnet', 'swin', 'convnext', 'resnet']
+    run_models = ['efficientnet', 'swin', 'convnext', 'resnet']
     run_datasets = ['bigearthnet', 'imagenet']
     run_datasets = ['bigearthnet']  # noqa
-    run_models = ['vit']  # noqa
+    # run_models = ['vit']  # noqa
 
     run_manager = RunManager(
         models=run_models,
         datasets=run_datasets,
         continue_on_error=False,
         train=True,
-        test_run=False,
+        test_run=True,
+        device=3,
     )
     run_manager.execute_runs()
