@@ -3,6 +3,8 @@ from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
 from utils.logger import create_logger
 from utils.config import CONFIG
+# impor totensor
+from torchvision.transforms import ToTensor
 
 from models import ModelCollection
 from sanity_checks.check_dataloader import check_dataloader
@@ -17,6 +19,7 @@ class DataLoaderCollection:
     model_collection = ModelCollection()
     ben_image_size = CONFIG['datasets']['bigearthnet']['image_size']
     ben_image_channels = CONFIG['datasets']['bigearthnet']['input_channels']
+    ignore_imagenet_transform = ['flexivit']
 
     def __init__(self):
         self.datamodule_getter = {
@@ -47,7 +50,9 @@ class DataLoaderCollection:
             train_val_test_split=CONFIG['datasets']['imagenet']['train_val_test_split'],
         )
 
-    def get_default_transform(self, model_name):
+    def get_imagenet_default_transform(self, model_name):
+        if model_name in self.ignore_imagenet_transform:
+            return ToTensor()  # TODO: normalization?
         imagenet_config = CONFIG['datasets']['imagenet']
         model = self.model_collection.get_model(model_name, dataset_config=imagenet_config,
                                                 pretrained=False)
@@ -57,7 +62,7 @@ class DataLoaderCollection:
 
     def combine_input_with_default_transform(self, model_name, additional_train_transform,
                                              additional_val_transform):
-        base_t = self.get_default_transform(model_name=model_name)
+        base_t = self.get_imagenet_default_transform(model_name=model_name)
         additional_train_transform = base_t if additional_train_transform is None else Compose(
             [base_t, additional_train_transform
          ])
@@ -85,4 +90,4 @@ class DataLoaderCollection:
 
 if __name__ == "__main__":
     dl_collection = DataLoaderCollection()
-    dl_collection.get_default_transform("resnet")
+    dl_collection.get_imagenet_default_transform("resnet")

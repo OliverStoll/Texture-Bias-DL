@@ -17,6 +17,8 @@ from transforms import empty_transforms
 from util_code.logs import mute_logs
 from sanity_checks.check_gpu import print_gpu_info
 
+wandb.require("core")
+
 
 class Run:
     """ Run class to execute a training run on a specific model and dataset
@@ -88,7 +90,7 @@ class Run:
                              group=self.dataset_name,
                              tags=logger_tags,
                              save_dir=self.logs_path,
-                             version=f"-{self.run_name}-{randint(0, 9999):04d}")
+                             version=f"-{self.run_name}-{randint(0, 99999999):08d}")
         return logger
 
     def _init_trainer(self):
@@ -157,11 +159,12 @@ class RunManager:
             val_transforms=None,
             models=None,
             datasets=None,
-            continue_on_error=False,
+            continue_on_error=True,
             train=None,
-            pretrained='auto',
+            pretrained=None,
             test_run=False,
             device=None,
+            verbose=False,
     ):
         self.models = models or list(os.getenv("MODEL"))
         self.datasets = datasets or list(os.getenv("DATASET"))
@@ -177,7 +180,8 @@ class RunManager:
         if int(utilization) > 0:
             self.log.warning(f"GPU {self.device} is already in use")
         seed_everything(42)
-        mute_logs()
+        if verbose is False:
+            mute_logs()
         self._log_start()
         if test_run:
             self.change_config_for_test_run()
@@ -204,8 +208,10 @@ class RunManager:
         self.log.info(f"Starting {number_of_runs} runs on GPU: {self.device}")
         run_idx = 0
         for dataset in self.datasets:
-            pretrained = (dataset == 'imagenet') if self.pretrained == 'auto' else self.pretrained
+            pretrained = (dataset == 'imagenet') if self.pretrained is None else self.pretrained
             train = (not pretrained) if self.train is None else self.train
+            if train and pretrained:
+                self.log.warning("Training and Pretraining at the same time")
             for model in self.models:
                 for val_transform_dict in self.val_transforms:
                     try:

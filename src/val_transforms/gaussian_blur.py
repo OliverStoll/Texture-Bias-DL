@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 import numpy as np
 
 # import example tensor
-from util_code.example_image import get_example_image_tensor, to_image
+from util_code.example_image import test_transform
 
 
 class GaussianBlurTransform:
@@ -84,12 +84,4 @@ class GaussianBlurTransform:
 
 
 if __name__ == "__main__":
-    image_tensor = get_example_image_tensor()
-    transform = GaussianBlurTransform()
-    filtered_tensor = transform(image_tensor)
-
-    # save the tensor as an image
-    image = to_image(filtered_tensor)
-    original_image = to_image(image_tensor)
-    image.save("gauss_blur_image.png")
-    original_image.save("original_image.png")
+    test_transform(transform=GaussianBlurTransform(kernel_size=11, sigma=5.0))

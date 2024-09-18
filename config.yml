@@ -1,11 +1,11 @@
 # training parameters
-epochs: 1
+epochs: 10
 limit_train_batches:
 limit_val_batches:
 limit_test_batches:
 learning_rate: 0.0001
 batch_size: 32
-num_workers: 30
+num_workers: 16
 pin_memory: True
 score_average: 'micro'
 
@@ -19,7 +19,7 @@ example_image: '/media/storagecube/data/shared/datasets/ImageNet-2012/n01440764/
 datasets:
   bigearthnet:
     task: multilabel
-    input_channels: 14
+    input_channels: 12  # 14
     image_size: 128
     num_classes:
     num_labels: 19

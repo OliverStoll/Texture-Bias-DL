@@ -175,8 +175,10 @@ class TrainingModule(LightningModule):
 
     def training_step(self, batch, batch_idx):
         metrics = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='train')
+        train_loss = metrics.pop('train_loss')
+        self.log('train_loss', train_loss, prog_bar=True)
         self.log_dict(metrics, logger=True)
-        return metrics['train_loss']
+        return train_loss
 
     def validation_step(self, batch, batch_idx):
         metrics = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='val')

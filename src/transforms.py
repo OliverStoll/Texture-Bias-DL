@@ -1,6 +1,6 @@
 from val_transforms.grid_shuffle import GridShuffleTransform
 # from val_transforms.low_pass import LowPassFilterTransform
-from val_transforms.edge_detection import EdgeDetectionTransform
+from val_transforms.edge_detection import SobelFilterTransform
 from val_transforms.bilateral import BilateralFilterTransform
 from utils.logger import create_logger
 
@@ -12,7 +12,7 @@ class TransformFactory:
         self.transforms_classes = {
             'grid_shuffle': GridShuffleTransform,
             # 'low_pass': LowPassFilterTransform,
-            'edges': EdgeDetectionTransform,
+            'edges': SobelFilterTransform,
             'bilateral': BilateralFilterTransform,
         }
 

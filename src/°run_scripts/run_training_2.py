@@ -1,14 +1,15 @@
 from runs import RunManager
 from models import ModelCollection
 
-models = list(ModelCollection().model_dict.keys())
-datasets = ['bigearthnet', 'imagenet']
+models = list(ModelCollection().all_models.keys())
+datasets = ['bigearthnet']
 
 run_manager = RunManager(
     models=models,
     datasets=datasets,
-    continue_on_error=True,
+    device=2,
     test_run=False,
-    device=3,
+    verbose=True,
+    continue_on_error=True,
 )
 run_manager.execute_runs()

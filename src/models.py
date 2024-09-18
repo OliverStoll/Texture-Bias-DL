@@ -6,19 +6,19 @@ class ModelCollection:
     default_in_channels = 3
     default_out_features = 1000
     cnn_models = {
-        'resnet': 'resnet50',  # ~25.6M
-        'efficientnet': 'efficientnet_b0',  # ~5.3M
-        'convnext': 'convnext_tiny',  # ~28M
-        'regnet': 'regnetx_002',  # ~2.7M
-        'densenet': 'densenet121',  # ~8M
-        'resnext': 'resnext50_32x4d',  # ~25M
-        'MobileNetV3': 'mobilenetv3_small_100',  # ~2.5M
-        'Xception': 'xception',  # ~22.9M
-        'inception_v3': 'inception_v3',  # ~27M
-        'regnety_004': 'regnety_004',  # ~20M
+        'resnet': 'resnet50',  # 25.6M
+        'efficientnet': 'efficientnet_b5',  # 30M
+        'convnext': 'convnext_tiny',  # 28M
+        'regnet': 'regnetx_016',  # 16M
+        'densenet': 'densenet161',  # 28M
+        'resnext': 'resnext50_32x4d',  # 25M
+        'mobilenet': 'mobilenetv3_large_100',  # 5.5M
+        'xception': 'legacy_xception',  # 22.9M
+        'inception': 'inception_v3',  # 27M
+        'regnety': 'regnety_004',  # 20M
         ############################
-        # 'vgg': 'vgg11_bn',  # ~132M  (too big)
-        # 'wide_resnet': 'wide_resnet50_2',   # ~90M  (too big)
+        # 'vgg': 'vgg11_bn',  # 132M  (too big)
+        # 'wide_resnet': 'wide_resnet50_2',   # 90M  (too big)
     }
     transformer_models = {
         "vit": "vit_tiny_patch16_224",  # 5.7M
@@ -27,12 +27,16 @@ class ModelCollection:
         "cait": "cait_s24_224",  # 24M
         "pvt": "pvt_v2_b2",  # 25.4M
         "pit": "pit_ti_224",  # 4.9M
-        # "crossvit": "crossvit_9_240",  # 26.9M  TODO: TENSOR SIZE MISMATCH
-        # "cvt": "cvt-13",  # 20M  TODO: NOT EXISTING
-        # "t2t_vit": "t2t_vit_14",  # 21.5M  TODO: NOT EXISTING
-        # "segformer": "segformer_b0"  # 3.8M  TODO: NOT EXISTING
+        'beit': 'beit_base_patch16_224',  # 86M TODO: TOO BIG
+        'convmixer': 'convmixer_768_32',  # 21M
+        # "crossvit": "crossvit_9_240",  # 26.9M  TENSOR SIZE MISMATCH
+        # "cvt": "cvt-13",  # 20M   doesnt exist
+        # "t2t_vit": "t2t_vit_14",  # 21.5M  doesnt exist
+        # "segformer": "segformer_b0"  # 3.8M  doesnt exist
+        # 'flexivit': 'flexivit_small',  # 22M  TODO: TENSOR SIZE ISSUES
+        'mvit': 'mvitv2_tiny',  # 25M
     }
-    model_dict = {**cnn_models, **transformer_models}
+    all_models = {**cnn_models, **transformer_models}
     img_size_models = list(transformer_models.keys())
     for no_img_size_transformer in ['pvt']:
         img_size_models.remove(no_img_size_transformer)
@@ -51,7 +55,7 @@ class ModelCollection:
         return in_channels, out_features
 
     def get_model(self, model_name: str, dataset_config: dict, pretrained: bool):
-        full_model_name = self.model_dict[model_name]
+        full_model_name = self.all_models[model_name]
         in_channels, out_features = self.get_in_out_channels(dataset_config)
         img_size = dataset_config['image_size'] if model_name in self.img_size_models else None
         self.log.debug(f"Initializing model: [{model_name}{' | Pretrained' if pretrained else ''}] ")
@@ -72,6 +76,6 @@ if __name__ == "__main__":
                       'image_size': 224}
     ben_data_conf = {'num_labels': 12, 'task': 'multilabel', 'input_channels': 14,
                      'image_size': 224}
-    for no_img_size_transformer in model_initializer.model_dict.keys():
+    for no_img_size_transformer in model_initializer.all_models.keys():
         print(no_img_size_transformer)
         model_initializer.get_model(no_img_size_transformer, ben_data_conf, pretrained=False)
