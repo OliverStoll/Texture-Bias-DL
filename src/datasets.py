@@ -1,22 +1,22 @@
-import pandas as pd
-from torchvision.models import (ResNet50_Weights, EfficientNet_B0_Weights, ViT_B_16_Weights,
-                                Swin_T_Weights, ConvNeXt_Tiny_Weights)
-from torchvision import transforms
 from torchvision.transforms import Compose
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
+from utils.logger import create_logger
+from utils.config import CONFIG
 
-from data_loading.BENv2DataModule import BENv2DataModule
-from data_loading.ImageNetDataModule import ImageNetDataModule
 from models import ModelCollection
 from sanity_checks.check_dataloader import check_dataloader
-from utils.config import CONFIG
-from utils.logger import create_logger
+from data_loading.ImageNetDataModule import ImageNetDataModule
+from configilm.extra.DataModules.BENv2_DataModule import BENv2DataModule
+from configilm.extra.data_dir import dataset_paths
+
 
 
 class DataLoaderCollection:
     log = create_logger("Data Loading")
     model_collection = ModelCollection()
+    ben_image_size = CONFIG['datasets']['bigearthnet']['image_size']
+    ben_image_channels = CONFIG['datasets']['bigearthnet']['input_channels']
 
     def __init__(self):
         self.datamodule_getter = {
@@ -24,27 +24,16 @@ class DataLoaderCollection:
             "imagenet": self._get_datamodule_imagenet,
         }
 
-    def _get_bigearthnet_keys(self, splits_path):
-        files = {"train": "all_train.csv", "validation": "all_val.csv", "test": "all_test.csv"}
-        keys = {}
-        for split, file in files.items():
-            keys[split] = pd.read_csv(f"{splits_path}/{file}", header=None, names=["name"]
-                                      ).name.to_list()
-        return keys
-
     def _get_datamodule_bigearthnet(self, train_transform, val_transform):
+        benv2_mapping = dataset_paths['benv2'][1]  # 1 for erde server
         return BENv2DataModule(
+            data_dirs=benv2_mapping,
+            batch_size=CONFIG['batch_size'],
+            num_workers_dataloader=CONFIG['num_workers'],
+            pin_memory=CONFIG['pin_memory'],
+            img_size=(self.ben_image_channels, self.ben_image_size, self.ben_image_size),
             train_transforms=train_transform,
             eval_transforms=val_transform,
-            keys=self._get_bigearthnet_keys(
-                splits_path="/media/storagecube/jonasklotz/BigEarthNet-V2/benv2_splits"),
-            image_lmdb_file="/media/storagecube/jonasklotz/BigEarthNet-V2/BENv2.lmdb",
-            label_file="/media/storagecube/jonasklotz/BigEarthNet-V2/lbls.parquet",
-            s2s1_mapping_file="/media/storagecube/jonasklotz/BigEarthNet-V2/new_s2s1_mapping.parquet",
-            batch_size=CONFIG['batch_size'],
-            num_workers=CONFIG['num_workers'],
-            img_size=CONFIG['datasets']['bigearthnet']['image_size'],
-            interpolation_mode=None
         )
 
     def _get_datamodule_imagenet(self, train_transform, val_transform):
@@ -59,8 +48,8 @@ class DataLoaderCollection:
         )
 
     def get_default_transform(self, model_name):
-        dataset_config = CONFIG['datasets']['imagenet']
-        model = self.model_collection.get_model(model_name, dataset_config=dataset_config,
+        imagenet_config = CONFIG['datasets']['imagenet']
+        model = self.model_collection.get_model(model_name, dataset_config=imagenet_config,
                                                 pretrained=False)
         config = resolve_data_config({}, model=model)
         transform = create_transform(**config)
