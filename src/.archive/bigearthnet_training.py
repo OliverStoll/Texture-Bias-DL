@@ -11,7 +11,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 # from pytorch_lightning.callbacks import StochasticWeightAveraging
 
 from data_loading.BENv2DataModule import BENv2DataModule
-from models import ModelCollection
+from models import ModelFactory
 from utils.config import CONFIG
 
 wandb.require("core")
@@ -44,7 +44,7 @@ def get_bigearthnet_dataloader():
 
 
 class GenericModule(LightningModule):
-    model_collection = ModelCollection()
+    model_collection = ModelFactory()
     INPUT_CHANNELS = 14
     OUTPUT_CLASSES = 19
     loss_fn = nn.BCEWithLogitsLoss()

@@ -1,8 +1,10 @@
 import timm
 from utils.logger import create_logger
+from utils.config import CONFIG
 
 
-class ModelCollection:
+class ModelFactory:
+    log = create_logger('ModelFactory')
     default_in_channels = 3
     default_out_features = 1000
     cnn_models = {
@@ -37,10 +39,18 @@ class ModelCollection:
         'mvit': 'mvitv2_tiny',  # 25M
     }
     all_models = {**cnn_models, **transformer_models}
+    # model names for external use
+    cnn_model_names = list(cnn_models.keys())
+    transformer_model_names = list(transformer_models.keys())
+    all_model_names = list(all_models.keys())
+    example_cnn_model_names = ['resnet', 'efficientnet', 'densenet', 'mobilenet']
+    example_transformer_model_names = ['vit', 'deit', 'swin', 'pvt']
+    example_model_names = example_cnn_model_names + example_transformer_model_names
+    # models that need image size as input
     img_size_models = list(transformer_models.keys())
     for no_img_size_transformer in ['pvt']:
         img_size_models.remove(no_img_size_transformer)
-    log = create_logger('ModelFactory')
+
 
     def get_in_out_channels(self, data_conf):
         in_channels = data_conf['input_channels']
@@ -54,7 +64,9 @@ class ModelCollection:
         out_features = out_features if out_features != self.default_out_features else None
         return in_channels, out_features
 
-    def get_model(self, model_name: str, dataset_config: dict, pretrained: bool):
+    def get_model(self, model_name: str, dataset_config: dict | str, pretrained: bool):
+        if isinstance(dataset_config, str):
+            dataset_config = CONFIG['datasets'][dataset_config]
         full_model_name = self.all_models[model_name]
         in_channels, out_features = self.get_in_out_channels(dataset_config)
         img_size = dataset_config['image_size'] if model_name in self.img_size_models else None
@@ -71,7 +83,7 @@ class ModelCollection:
 
 
 if __name__ == "__main__":
-    model_initializer = ModelCollection()
+    model_initializer = ModelFactory()
     dataset_config = {'num_classes': 10, 'task': 'multiclass', 'input_channels': 3,
                       'image_size': 224}
     ben_data_conf = {'num_labels': 12, 'task': 'multilabel', 'input_channels': 14,

@@ -10,9 +10,9 @@ from utils.config import ROOT_DIR, CONFIG
 from utils.logger import create_logger
 from random import randint
 
-from datasets import DataLoaderCollection
+from datasets import DataLoaderFactory
 from training import TrainingModule
-from models import ModelCollection
+from models import ModelFactory
 from transforms import empty_transforms
 from util_code.logs import mute_logs
 from sanity_checks.check_gpu import print_gpu_info
@@ -28,8 +28,8 @@ class Run:
     """
     logs_path = f'{ROOT_DIR}/logs'  # '/media/storagecube/olivers/logs'
     checkpoint_path = '/media/storagecube/olivers/logs/checkpoints'
-    dl_collection = DataLoaderCollection()
-    model_collection = ModelCollection()
+    dl_collection = DataLoaderFactory()
+    model_collection = ModelFactory()
 
     def __init__(self, dataset_name, model_name, devices, do_training=True, pretrained=False,
                  val_transform=None, val_transform_name=None, val_transform_param=None,
@@ -49,7 +49,6 @@ class Run:
         self.data_config = CONFIG['datasets'][dataset_name]
         self.train_dl, self.val_dl, self.test_dl = self.dl_collection.get_dataloader(
             dataset_name=self.dataset_name,
-            model_name=self.model_name,
             val_transform=self.val_transform
         )
         self.model = self.model_collection.get_model(
@@ -74,7 +73,7 @@ class Run:
     def _init_run_name(self):
         train_type = 'ST' if self.do_training else 'PT' if self.pretrained else 'NT'
         transform_params_log = f'-{self.val_transform_name}-{self.val_transform_param}' if train_type != 'ST' else ''
-        return f"{self.dataset_name}-{self.model_name}-{train_type}{transform_params_log}"
+        return f"{self.dataset_name}-{self.model_name}-{train_type}{transform_params_log}-{randint(0, 999999):06d}"
 
     def _init_logger(self):
         logger_tags = [
@@ -90,7 +89,7 @@ class Run:
                              group=self.dataset_name,
                              tags=logger_tags,
                              save_dir=self.logs_path,
-                             version=f"-{self.run_name}-{randint(0, 99999999):08d}")
+                             version=f"-{self.run_name}")
         return logger
 
     def _init_trainer(self):
@@ -120,7 +119,7 @@ class Run:
         for checkpoint in os.listdir(checkpoint_dir):
             if metric not in checkpoint:
                 continue
-            score = checkpoint.split('=')[2].replace('.ckpt', '')
+            score = checkpoint.split('=')[2].replace('.ckpt', '').split('-')[0]
             score = float(score)
             if score > best_score:
                 best_score = score
@@ -156,7 +155,7 @@ class RunManager:
 
     def __init__(
             self,
-            val_transforms=None,
+            eval_transforms=None,
             models=None,
             datasets=None,
             continue_on_error=True,
@@ -167,10 +166,13 @@ class RunManager:
             verbose=False,
     ):
         self.models = models or list(os.getenv("MODEL"))
+        if self.models is None:
+            self.models = ModelFactory().all_model_names
         self.datasets = datasets or list(os.getenv("DATASET"))
-        assert self.models is not None, "Models not specified"
-        assert self.datasets is not None, "Datasets not specified"
-        self.val_transforms = val_transforms or empty_transforms
+        if self.datasets is None:
+            self.datasets = DataLoaderFactory().dataset_names
+
+        self.eval_transforms = eval_transforms or empty_transforms
         # settings
         self.continue_on_error = continue_on_error
         self.train = train
@@ -184,7 +186,8 @@ class RunManager:
             mute_logs()
         self._log_start()
         if test_run:
-            self.change_config_for_test_run()
+            test_run_batches = self.test_run_batches if test_run is True else test_run
+            self.change_config_for_test_run(test_run_batches=test_run_batches)
 
     def determine_gpu(self):
         devices = [int(os.getenv("MY_DEVICE", "-1"))]
@@ -194,18 +197,53 @@ class RunManager:
         return devices
 
     def _log_start(self):
-        self.log.info(f"\n\n\n\tSTARTING RUNS FOR {self.models} ON {self.datasets} "
-                      f"(PT: {self.pretrained} - val_transforms: {self.val_transforms[0]}\n\n")
+        transform_types = {t['type'] for t in self.eval_transforms}
+        self.log.info(f"\n\n\tSTARTING RUNS:"
+                      f"\n\t\tMODELS:      {', '.join(self.models)}"
+                      f"\n\t\tDATASETS:    {', '.join(self.datasets)}"
+                      f"\n\t\tTRAIN:       {'AUTO' if self.train is None else self.train}"
+                      f"\n\t\tPRETRAINED:  {'AUTO' if self.pretrained is None else self.pretrained}"
+                      f"\n\t\tTRANSFORM:   {', '.join(transform_types) if transform_types != {None} else ''}\n\n")
 
-    def change_config_for_test_run(self):
-        self.log.warning(f"Test-Run with only {self.test_run_batches} batches each")
-        CONFIG['limit_train_batches'] = self.test_run_batches * 2
-        CONFIG['limit_val_batches'] = self.test_run_batches
-        CONFIG['limit_test_batches'] = self.test_run_batches
+    def change_config_for_test_run(self, test_run_batches=None):
+        self.log.warning(f"Test-Run with only {test_run_batches} batches each")
+        CONFIG['limit_train_batches'] = test_run_batches * 2
+        CONFIG['limit_val_batches'] = test_run_batches
+        CONFIG['limit_test_batches'] = test_run_batches
+
+
+    def execute_single_run(self, dataset, model, val_transform_dict, run_idx, train, pretrained):
+        number_of_runs = len(self.models) * len(self.datasets) * len(self.eval_transforms)
+        try:
+            self.log.info(f"[{run_idx}/{number_of_runs}] Starting Run "
+                          f"[{dataset}"
+                          f" | {model}"
+                          f" | {'train' if train else 'pretrain' if pretrained else 'eval'}"
+                          f" | {val_transform_dict['type']}"
+                          f" | {val_transform_dict['param']}]")
+            run = Run(dataset_name=dataset,
+                      model_name=model,
+                      do_training=train,
+                      pretrained=pretrained,
+                      val_transform=val_transform_dict['transform'],
+                      val_transform_name=val_transform_dict['type'],
+                      val_transform_param=val_transform_dict['param'],
+                      logger=self.log,
+                      devices=self.device)
+            run.execute()
+        except Exception as e:
+            self.log.error(f"Run failed for {model} on {dataset}", e)
+            wandb.finish()
+            if self.continue_on_error:
+                self.log.info(f"Continung with next Run")
+            else:
+                raise e
 
     def execute_runs(self):
-        number_of_runs = len(self.models) * len(self.datasets) * len(self.val_transforms)
+        number_of_runs = len(self.models) * len(self.datasets) * len(self.eval_transforms)
         self.log.info(f"Starting {number_of_runs} runs on GPU: {self.device}")
+        if self.train is False:
+            self.log.info(f"This could take ~ {number_of_runs / 12:.0f}-{number_of_runs / 4:.0f} hours")
         run_idx = 0
         for dataset in self.datasets:
             pretrained = (dataset == 'imagenet') if self.pretrained is None else self.pretrained
@@ -213,36 +251,15 @@ class RunManager:
             if train and pretrained:
                 self.log.warning("Training and Pretraining at the same time")
             for model in self.models:
-                for val_transform_dict in self.val_transforms:
-                    try:
-                        run_idx += 1
-                        self.log.info(f"[{run_idx}/{number_of_runs}] Starting Run "
-                                      f"[{dataset} | {model} | PT:{pretrained} | {val_transform_dict['type']}"
-                                      f" | {val_transform_dict['param']}]")
-                        run = Run(dataset_name=dataset,
-                                  model_name=model,
-                                  do_training=train,
-                                  pretrained=pretrained,
-                                  val_transform=val_transform_dict['transform'],
-                                  val_transform_name=val_transform_dict['type'],
-                                  val_transform_param=val_transform_dict['param'],
-                                  logger=self.log,
-                                  devices=self.device)
-                        run.execute()
-                        del run
-                    except Exception as e:
-                        self.log.error(f"Run failed for {model} on {dataset}", e)
-                        wandb.finish()
-                        if self.continue_on_error:
-                            self.log.info(f"Continung with next Run")
-                        else:
-                            raise e
+                for val_transform_dict in self.eval_transforms:
+                    run_idx += 1
+                    self.execute_single_run(dataset, model, val_transform_dict, run_idx, train, pretrained)
 
 
 if __name__ == '__main__':
     run_models = ['efficientnet', 'swin', 'convnext', 'resnet']
-    run_datasets = ['bigearthnet', 'imagenet']
-    run_datasets = ['bigearthnet']  # noqa
+    run_datasets = DataLoaderFactory().dataset_names
+    run_datasets = ['caltech']  # noqa
     # run_models = ['vit']  # noqa
 
     run_manager = RunManager(
@@ -250,6 +267,7 @@ if __name__ == '__main__':
         datasets=run_datasets,
         continue_on_error=False,
         train=True,
+        pretrained=True,
         test_run=True,
         device=3,
     )

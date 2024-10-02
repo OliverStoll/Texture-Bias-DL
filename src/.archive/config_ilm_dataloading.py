@@ -1,4 +1,4 @@
-from configilm.extra.DataModules.BENv2_DataModule import BENv2DataModule
+from configilm.extra.DataModules import BENv2DataModule
 from configilm.extra.data_dir import dataset_paths
 
 from utils.config import CONFIG

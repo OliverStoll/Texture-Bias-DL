@@ -1,7 +1,7 @@
 import torch
 import torch.fft
 
-from util_code.example_image import get_example_image_tensor, to_tensor, to_image
+from sanity_checks.check_transforms import get_example_tensor, to_tensor, to_image
 
 
 class ButterworthHighPassFilter:
@@ -64,7 +64,7 @@ class ButterworthHighPassFilter:
 
 
 if __name__ == '__main__':
-    tensor = get_example_image_tensor()
+    tensor = get_example_tensor()
     transform = ButterworthHighPassFilter(cutoff=50, order=5)
     output_tensor = transform(tensor)
     output_image = to_image(output_tensor)

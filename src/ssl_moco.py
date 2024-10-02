@@ -6,7 +6,7 @@ import torch.optim as optim
 import pytorch_lightning as pl
 from torchvision.models import resnet50
 
-from datasets import DataLoaderCollection
+from datasets import DataLoaderFactory
 
 
 class MoCoModel(pl.LightningModule):
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     # TODO: create a PairedDataset class for the dataloading
     # load backbone resnet with pretrained weights
     DEVICES = [2]
-    train_dl, val_dl, _ = DataLoaderCollection().get_dataloader(dataset_name='imagenet', model_name='resnet')
+    train_dl, val_dl, _ = DataLoaderFactory().get_dataloader(dataset_name='imagenet', model_name='resnet')
     resnet_model = resnet50(weights='DEFAULT')
     num_features = resnet_model.fc.in_features
     out_dimension = 128

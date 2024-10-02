@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 import numpy as np
 
 # import example tensor
-from util_code.example_image import test_transform
+from sanity_checks.check_transforms import test_transform
 
 
 class GaussianBlurTransform:
@@ -14,15 +14,15 @@ class GaussianBlurTransform:
         Initialize the GaussianBlurTransform.
 
         Args:
-            kernel_size (int): Size of the Gaussian kernel (must be odd).
+            kernel_size (int): Size of the Gaussian kernel (must be odd or 0 for no operation).
             sigma (float): Standard deviation of the Gaussian distribution.
         """
-        assert kernel_size % 2 == 1, "kernel_size must be odd."
-        self.kernel_size = kernel_size
         self.sigma = sigma
+        min_kernel_size = int(sigma) * 2 + 1
+        self.kernel_size = max(min_kernel_size, kernel_size)
 
         # Create a Gaussian kernel
-        self.kernel = self._create_gaussian_kernel(kernel_size, sigma)
+        self.kernel = self._create_gaussian_kernel(self.kernel_size, self.sigma)
 
     def __call__(self, image_tensor):
         """
@@ -34,6 +34,11 @@ class GaussianBlurTransform:
         Returns:
             torch.Tensor: Blurred image tensor with the same shape as input.
         """
+        if self.kernel_size == 0 or self.sigma == 0:
+            return image_tensor
+
+        assert self.kernel_size % 2 == 1, "kernel_size must be odd."
+
         # Ensure the image tensor has 4 dimensions (N, C, H, W)
         if image_tensor.dim() == 3:
             image_tensor = image_tensor.unsqueeze(0)
@@ -48,8 +53,11 @@ class GaussianBlurTransform:
         # Repeat the kernel for each channel
         kernel = kernel.expand(C, 1, self.kernel_size, self.kernel_size)
 
-        # Apply Gaussian blur using depthwise convolution
-        blurred = F.conv2d(image_tensor, kernel, groups=C, padding=self.kernel_size // 2)
+        # Apply Gaussian blur using depthwise convolution. use reflection padding to avoid border artifacts
+        padding_size = self.kernel_size // 2
+        pad = (padding_size, padding_size, padding_size, padding_size)
+        padded_image_tensor = F.pad(image_tensor, pad, mode='reflect')
+        blurred = F.conv2d(padded_image_tensor, kernel, groups=C)
 
         # If the input was 3D, remove the batch dimension
         if blurred.shape[0] == 1:
@@ -69,6 +77,8 @@ class GaussianBlurTransform:
             torch.Tensor: 2D Gaussian kernel of shape (1, 1, kernel_size, kernel_size).
         """
         # Ensure kernel_size is odd
+        if kernel_size == 0:
+            return None
         if kernel_size % 2 == 0:
             raise ValueError("kernel_size must be an odd integer.")
 
@@ -84,4 +94,10 @@ class GaussianBlurTransform:
 
 
 if __name__ == "__main__":
-    test_transform(transform=GaussianBlurTransform(kernel_size=11, sigma=5.0))
+    for sigma in [0.5, 1.0, 2.0, 4.0, 10., 30.]:
+        test_transform(
+            transform=GaussianBlurTransform(sigma=sigma),
+            transform_name="gaussian",
+            param=sigma,
+            dataset='bigearthnet'
+        )

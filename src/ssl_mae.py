@@ -6,7 +6,7 @@ import os
 import wandb
 from pytorch_lightning.loggers import WandbLogger
 
-from datasets import DataLoaderCollection
+from datasets import DataLoaderFactory
 from ssl_models.mae import MAE
 
 
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     logger = _init_logger()
     vit = vit_base_patch32_224(pretrained=True)
     mae_module = MAEModel(vit=vit)
-    train_loader, val_loader, test_loader = DataLoaderCollection().get_dataloader('imagenet', 'vit')
+    train_loader, val_loader, test_loader = DataLoaderFactory().get_dataloader('imagenet', 'vit')
     trainer = pl.Trainer(
         max_epochs=epochs,
         devices=devices,

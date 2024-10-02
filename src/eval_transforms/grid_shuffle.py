@@ -4,9 +4,10 @@ import torch
 import torchvision.transforms.functional as torchfunc
 import torch.nn.functional as F
 
+from sanity_checks.check_transforms import test_transform
+
 
 class GridShuffleTransform:
-    # TODO: fix grey sides
     def __init__(self, grid_size):
         self.grid_size = grid_size
         self.dims = None
@@ -51,3 +52,8 @@ class GridShuffleTransform:
         rescaled_shuffled_image = self.rescale_to_original(shuffled_image)
 
         return rescaled_shuffled_image
+
+
+if __name__ == '__main__':
+    transform = GridShuffleTransform(4)
+    test_transform(transform, 'grid_shuffle', 5, dataset='bigearthnet')

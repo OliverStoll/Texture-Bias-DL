@@ -3,7 +3,7 @@ from torchvision import transforms
 from torchvision.transforms import Compose
 
 from transforms.grid_shuffle_transform import GridShuffleTransform
-from datasets import DataLoaderCollection
+from datasets import DataLoaderFactory
 
 
 def visualize_normalized_image(image, dataset):
@@ -18,7 +18,7 @@ def test_grid_shuffle(dataset):
         GridShuffleTransform(grid_size=4),
         transforms.Resize(120)
     ])
-    dl_collection = DataLoaderCollection()
+    dl_collection = DataLoaderFactory()
     dl_tuple = dl_collection.get_dataloader(dataset_name=dataset, model_name='resnet',
                                             is_pretrained=False, val_transform=val_transform)
 

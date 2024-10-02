@@ -1,8 +1,8 @@
 import numpy as np
 import torch
-
 from utils.logger import create_logger
 from utils.config import CONFIG
+
 
 log = create_logger("SanityCheck Data")
 
@@ -75,3 +75,8 @@ def analyze_dataloader_class_balance(train_loader, val_loader, test_loader):
 def check_dataloader(train_loader, val_loader, test_loader):
     print_dataloader_sizes(train_loader, val_loader, test_loader)
     check_image_normalization(train_loader, val_loader, test_loader)
+
+
+def check_all(train_loader, val_loader, test_loader):
+    check_dataloader(train_loader, val_loader, test_loader)
+    analyze_dataloader_class_balance(train_loader, val_loader, test_loader)

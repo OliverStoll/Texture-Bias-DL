@@ -1,18 +1,26 @@
 # training parameters
-epochs: 10
+epochs: 30
 limit_train_batches:
 limit_val_batches:
 limit_test_batches:
 learning_rate: 0.0001
 batch_size: 32
-num_workers: 16
+num_workers: 6
 pin_memory: True
 score_average: 'micro'
+train_val_test_split: [0.7, 0.15, 0.15]
+seed: 42
+dataloader_timeout: 600
 
 # paths
 output_dir: '/home/olivers/colab-master-thesis/output'
 checkpoint_dir: '/media/storagecube/olivers/logs/checkpoints'
 example_image: '/media/storagecube/data/shared/datasets/ImageNet-2012/n01440764/n01440764_10026.JPEG'
+example_tensors:
+  imagenet: '/home/olivers/colab-master-thesis/output/test_data/Imagenet_tensor.pt'
+  bigearthnet: '/home/olivers/colab-master-thesis/output/test_data/BEN_tensor.pt'
+example_BEN_tensor_unnormalized: '/home/olivers/colab-master-thesis/output/test_data/BEN_tensor_unnormalized.pt'
+example_image_output: "/home/olivers/colab-master-thesis/output/transform_examples"
 
 
 # dataset parameters
@@ -21,7 +29,6 @@ datasets:
     task: multilabel
     input_channels: 12  # 14
     image_size: 128
-    num_classes:
     num_labels: 19
   imagenet:
     path: /media/storagecube/data/shared/datasets/ImageNet-2012
@@ -29,5 +36,18 @@ datasets:
     input_channels: 3
     image_size: 224
     num_classes: 1000
-    num_labels:
-    train_val_test_split: [0.7, 0.15, 0.15]
+  caltech:
+    path: /media/storagecube/data/shared/datasets/Caltech101
+    task: multiclass
+    input_channels: 3
+    image_size: 224
+    num_classes: 102
+  deepglobe:
+    path: '/media/storagecube/data/shared/datasets/deepGlobe'
+    labels_path:
+    csv_paths:
+      train: '/media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_train.csv'
+      val: '/media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_test.csv'
+      test: '/media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_test.csv'
+    image_size: 120
+

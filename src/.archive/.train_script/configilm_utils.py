@@ -5,7 +5,7 @@ from typing import Mapping
 import lightning.pytorch as pl
 import torch
 from configilm.extra.BENv2_utils import STANDARD_BANDS
-from configilm.extra.DataModules.BENv2_DataModule import BENv2DataModule
+from configilm.extra.DataModules import BENv2DataModule
 from huggingface_hub import HfApi
 from lightning.pytorch.loggers import WandbLogger
 from torchvision import transforms

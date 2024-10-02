@@ -42,9 +42,10 @@ class TrainingModule(LightningModule):
         self.loss_fn = self.loss_fns[self.task]
         self.dataset_name = dataset_name
         self.score_average = CONFIG['score_average']
+        # use get
         metric_data = {
-            'num_classes': dataset_config['num_classes'],
-            'num_labels': dataset_config['num_labels'],
+            'num_classes': dataset_config.get('num_classes', None),
+            'num_labels': dataset_config.get('num_labels', None),
             'task': dataset_config['task']
         }
         self.simple_metrics = ['accuracy', 'precision', 'recall', 'f1']
@@ -152,7 +153,8 @@ class TrainingModule(LightningModule):
         images, labels = batch
         image = images[idx]
         caption = self._get_log_image_caption(image, labels, idx)
-        image = image if self.dataset_name == 'imagenet' else images[idx][[3, 2, 1], :, :]
+        if image.shape[0] > 3 and image.shape[0] < 100:
+            image = image[[3, 2, 1], :, :]
         self.logger.experiment.log({f"{stage}_image": wandb.Image(data_or_path=image, caption=caption)})
 
     def log_classification_report(self, stage):

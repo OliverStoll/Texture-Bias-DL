@@ -19,7 +19,6 @@ from BENv2TorchUtils import stack_and_interpolate
 from BENv2Utils import _all_bandnames
 
 from torchvision import transforms
-import pandas as pd
 
 
 class BENv2DataModule(LightningDataModule):

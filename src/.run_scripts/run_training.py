@@ -1,7 +1,7 @@
 from runs import RunManager
-from models import ModelCollection
+from models import ModelFactory
 
-models = list(ModelCollection().all_models.keys())
+models = list(ModelFactory().all_models.keys())
 datasets = ['bigearthnet', 'imagenet']
 
 run_manager = RunManager(

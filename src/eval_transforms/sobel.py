@@ -1,15 +1,20 @@
 import torch
 import torch.nn.functional as F
 
-from util_code.example_image import test_transform
+from sanity_checks.check_transforms import test_transform
 
 
 class SobelFilterTransform:
-    def __init__(self):
-        pass
+    def __init__(self, kernel_size=3):
+        self.kernel_size = kernel_size
+        # TODO: implement different kernel sizes
 
     def __call__(self, image_tensor):
         """Applies a Sobel edge detection filter to an image, channel-wise"""
+
+        if self.kernel_size == 0:
+            return image_tensor
+
         sobel_x = torch.tensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=torch.float32)
         sobel_y = torch.tensor([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=torch.float32)
         # Reshape the kernels to be applied as convolution filters
