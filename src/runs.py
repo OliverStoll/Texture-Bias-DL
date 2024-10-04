@@ -21,32 +21,36 @@ wandb.require("core")
 
 
 class Run:
-    """ Run class to execute a training run on a specific model and dataset
-
-        Abbreviations: dl = dataloader
-                       grid_shuffle = the number of grid squares for width and height (4 -> 4x4)
-    """
+    """ Run class to execute a training run on a specific model and dataset """
     logs_path = f'{ROOT_DIR}/logs'  # '/media/storagecube/olivers/logs'
     checkpoint_path = '/media/storagecube/olivers/logs/checkpoints'
     dl_collection = DataLoaderFactory()
     model_collection = ModelFactory()
+    main_metrics = {
+        'multiclass': 'val_accuracy_micro',
+        'multilabel': 'val_mAP_micro'
+    }
 
     def __init__(self, dataset_name, model_name, devices, do_training=True, pretrained=False,
                  val_transform=None, val_transform_name=None, val_transform_param=None,
-                 logger=None, random_id=420000):
+                 logger=None, random_id=420000, epochs=None):
         # arguments
         self.log = logger or logging.getLogger("Run")
         self.log.setLevel(logging.DEBUG)
         self.dataset_name = dataset_name
+        self.data_config = CONFIG['datasets'][dataset_name]
         self.model_name = model_name
+        self.epochs = epochs or self.data_config['epochs']
         self.devices = devices
         self.do_training = do_training
         self.pretrained = pretrained
         self.val_transform_param = val_transform_param
         self.val_transform_name = val_transform_name
         self.val_transform = val_transform
+        self.main_metric = self.main_metrics[self.data_config['task']]
+        self.checkpoint_dir = f"{self.checkpoint_path}/{dataset_name}/{model_name}"
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
         # setup
-        self.data_config = CONFIG['datasets'][dataset_name]
         self.train_dl, self.val_dl, self.test_dl = self.dl_collection.get_dataloader(
             dataset_name=self.dataset_name,
             eval_transform=self.val_transform
@@ -60,11 +64,6 @@ class Run:
             model=self.model,
             dataset_name=self.dataset_name,
             dataset_config=self.data_config
-        )
-        self.profiler = SimpleProfiler(
-            dirpath=f'{self.logs_path}/profiler',
-            filename=f'{dataset_name}-{model_name}',
-            extended=True
         )
         self.run_name = self._init_run_name(random_id)
         self.logger = self._init_logger()
@@ -80,6 +79,7 @@ class Run:
             f"model:{self.model_name}",
             f"data:{self.dataset_name}",
             f"pretrained:{self.pretrained}",
+            f"train:{self.do_training}",
             f"val_transform:{self.val_transform_name}",
             f"val_transform_param:{self.val_transform_param}"
         ]
@@ -94,16 +94,14 @@ class Run:
 
     def _init_trainer(self):
         checkpoint_callback = ModelCheckpoint(
-            monitor='val_mAP_micro',
+            monitor=self.main_metric,
             dirpath=f'{self.checkpoint_path}/{self.model_name}',
-            filename='{epoch:02d}-{val_mAP_micro:.3f}',
+            filename='{epoch:02d}-{'+self.main_metric+':.3f}',
             mode='max'
         )
         trainer = Trainer(
-            max_epochs=CONFIG['epochs'],
+            max_epochs=self.epochs,
             logger=self.logger,
-            profiler=self.profiler,
-            # devices=self.devices,
             callbacks=[checkpoint_callback] if self.do_training else [],
             limit_train_batches=CONFIG['limit_train_batches'],
             limit_val_batches=CONFIG['limit_val_batches'],
@@ -112,19 +110,18 @@ class Run:
         )
         return trainer
 
-    def load_checkpoint(self, metric='val_mAP_micro'):
+    def load_checkpoint(self):
         checkpoint_dir = f"{CONFIG['checkpoint_dir']}/{self.model_name}"
         best_score = 0
         best_score_checkpoint = ""
         for checkpoint in os.listdir(checkpoint_dir):
-            if metric not in checkpoint:
+            if self.main_metric not in checkpoint:
                 continue
             score = checkpoint.split('=')[2].replace('.ckpt', '').split('-')[0]
             score = float(score)
             if score > best_score:
                 best_score = score
                 best_score_checkpoint = checkpoint
-
         assert best_score_checkpoint != ""
         checkpoint_path = f"{checkpoint_dir}/{best_score_checkpoint}"
         self.log.info(f"Loading checkpoint {best_score_checkpoint}")
@@ -137,14 +134,11 @@ class Run:
         return model_module
 
     def execute(self):
-        if self.pretrained:
-            self.trainer.test(self.model_module, self.test_dl)
-        if self.pretrained is False and self.do_training is False:
-            self.model_module = self.load_checkpoint()
-            self.trainer.test(self.model_module, self.test_dl)
         if self.do_training:
             self.trainer.fit(self.model_module, self.train_dl, self.val_dl)
-            self.trainer.test(self.model_module, self.test_dl)
+        elif self.pretrained is False:
+            self.model_module = self.load_checkpoint()
+        self.trainer.test(self.model_module, self.test_dl)
         wandb.finish()
         self.log.debug("Run finished")
 
@@ -164,7 +158,9 @@ class RunManager:
             test_run=False,
             device=None,
             verbose=False,
+            epochs=None,
     ):
+        self.epochs = epochs
         self.models = models or list(os.getenv("MODEL"))
         if self.models is None:
             self.models = ModelFactory().all_model_names
@@ -232,15 +228,18 @@ class RunManager:
                       val_transform_param=val_transform_dict['param'],
                       logger=self.log,
                       devices=self.device,
-                      random_id=self.random_ids[run_idx])
+                      random_id=self.random_ids[run_idx],
+                      epochs=self.epochs)
             run.execute()
+
         except Exception as e:
             self.log.error(f"Run failed for {model} on {dataset}", e)
-            wandb.finish()
             if self.continue_on_error:
                 self.log.info(f"Continung with next Run")
             else:
                 raise e
+        finally:
+            wandb.finish()
 
     def execute_runs(self):
         number_of_runs = len(self.models) * len(self.datasets) * len(self.eval_transforms)
@@ -260,8 +259,6 @@ class RunManager:
 
 
 if __name__ == '__main__':
-
-    wandb.finish()
     run_models = ['efficientnet', 'swin', 'convnext', 'resnet']
     run_datasets = DataLoaderFactory().dataset_names
     run_datasets = ['caltech']  # noqa

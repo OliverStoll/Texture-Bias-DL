@@ -5,7 +5,7 @@ limit_val_batches:
 limit_test_batches:
 learning_rate: 0.0001
 batch_size: 32
-num_workers: 6
+num_workers: 8
 pin_memory: True
 score_average: 'micro'
 train_val_test_split: [0.7, 0.15, 0.15]
@@ -30,18 +30,22 @@ datasets:
     input_channels: 12  # 14
     image_size: 128
     num_labels: 19
+    epochs: 10
   imagenet:
     task: multiclass
     input_channels: 3
     path: /media/storagecube/data/shared/datasets/ImageNet-2012
     image_size: 224
     num_classes: 1000
+    epochs: 0
   caltech:
     task: multiclass
     input_channels: 3
     image_size: 224
-    num_classes: 102
+    top_n: 20
+    num_classes: 20  # manually set
     path: /media/storagecube/data/shared/datasets/Caltech101
+    epochs: 20
   deepglobe:
     task: multilabel
     input_channels: 3
@@ -53,4 +57,5 @@ datasets:
       train: '/media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_train.csv'
       validation: '/media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_test.csv'
       test: '/media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_test.csv'
+    epochs: 30
 

@@ -105,16 +105,4 @@ caltech101_classnames = [
 CALTECH101_IDX2NAME = {idx: name for idx, name in enumerate(caltech101_classnames)}
 CALTECH101_NAME2IDX = {name: idx for idx, name in enumerate(caltech101_classnames)}
 
-MNIST_IDX2NAME = {
-    0: "0",
-    1: "1",
-    2: "2",
-    3: "3",
-    4: "4",
-    5: "5",
-    6: "6",
-    7: "7",
-    8: "8",
-    9: "9",
-}
-MNIST_NAME2IDX = {name: idx for idx, name in enumerate(MNIST_IDX2NAME.values())}
+CALTECH_CLASSNAMES_20 = ['airplanes', 'Motorbikes', 'Faces', 'Faces_easy', 'watch', 'Leopards', 'bonsai', 'ketch', 'chandelier', 'hawksbill', 'grand_piano', 'brain', 'butterfly', 'helicopter', 'menorah', 'kangaroo', 'starfish', 'trilobite', 'buddha', 'ewer']

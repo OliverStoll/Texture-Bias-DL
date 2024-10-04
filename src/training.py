@@ -6,6 +6,9 @@ from torchmetrics import Accuracy, Precision, Recall, F1Score, AveragePrecision
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from sklearn.metrics import classification_report
 from utils.config import CONFIG
+from utils.logger import create_logger
+
+from data_loading.caltech.caltech_constants import CALTECH_CLASSNAMES_20
 
 BEN_LABELS = {
     0: ("Urban fabric", "Urban"),
@@ -42,9 +45,16 @@ DEEPGLOBE_LABELS = {
 
 
 class TrainingModule(LightningModule):
+    log_ = create_logger("Training Module")
     loss_fns = {'multiclass': nn.CrossEntropyLoss(), 'multilabel': nn.BCEWithLogitsLoss()}
     optimizer = torch.optim.Adam
     log_mAP_classes = False  # DISABLED DUE TO CLUTTER
+    all_target_names = {
+        'bigearthnet': [label[1] for label in BEN_LABELS.values()],
+        'deepglobe': [label for label in DEEPGLOBE_LABELS.values()],
+        'caltech': [label for label in CALTECH_CLASSNAMES_20],
+        'imagenet': range(1000)
+    }
 
     def __init__(self, dataset_name, dataset_config, model):
         super().__init__()
@@ -59,10 +69,7 @@ class TrainingModule(LightningModule):
             'num_labels': dataset_config.get('num_labels', None),
             'task': dataset_config['task']
         }
-        if dataset_name == 'bigearthnet':
-            self.target_names = [label[1] for label in BEN_LABELS.values()]
-        elif dataset_name == 'deepglobe':
-            self.target_names = [label for label in DEEPGLOBE_LABELS.values()]
+        self.target_names = self.all_target_names[dataset_name]
         self.simple_metrics = ['accuracy', 'precision', 'recall', 'f1']
         self.accuracy_micro = Accuracy(**metric_data, average='micro')
         self.precision_micro = Precision(**metric_data, average='micro')
@@ -173,18 +180,22 @@ class TrainingModule(LightningModule):
         self.logger.experiment.log({f"{stage}_image": wandb.Image(data_or_path=image, caption=caption)})
 
     def log_classification_report(self, stage):
-        predictions, labels = zip(*self.val_step_outputs)
-        predictions = torch.cat(predictions)
-        labels = torch.cat(labels)
-        report = classification_report(labels.numpy(), predictions.numpy(), zero_division=0,
-                                       output_dict=True, target_names=self.target_names)
-        report_table = wandb.Table(columns=["class", "precision", "recall", "f1-score", "support"])
-        for label, metrics in report.items():
-            if isinstance(metrics, dict):
-                report_table.add_data(label, metrics["precision"], metrics["recall"],
-                                      metrics["f1-score"], metrics["support"])
-        self.logger.experiment.log({f"{stage}_classification_report": report_table})
-        self.val_step_outputs.clear()
+        try:
+            predictions, labels = zip(*self.val_step_outputs)
+            predictions = torch.cat(predictions)
+            labels = torch.cat(labels)
+            report = classification_report(labels.numpy(), predictions.numpy(), zero_division=0,
+                                           output_dict=True, target_names=self.target_names)
+            report_table = wandb.Table(columns=["class", "precision", "recall", "f1-score", "support"])
+            for label, metrics in report.items():
+                if isinstance(metrics, dict):
+                    report_table.add_data(label, metrics["precision"], metrics["recall"],
+                                          metrics["f1-score"], metrics["support"])
+            self.logger.experiment.log({f"{stage}_classification_report": report_table})
+        except Exception as e:
+            self.log_.warning("Error logging classification report")
+        finally:
+            self.val_step_outputs.clear()
 
     def forward(self, x):
         return self.model(x)

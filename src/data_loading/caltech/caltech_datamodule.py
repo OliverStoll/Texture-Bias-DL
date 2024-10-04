@@ -1,4 +1,9 @@
+from typing import List
+
 import torch
+from collections import Counter
+from torch.utils.data import Subset
+from torch.utils.data.dataset import T_co
 from torchvision import transforms
 from torch.utils.data import random_split, DataLoader
 from torchvision.datasets import Caltech101
@@ -9,15 +14,52 @@ DATA_CONFIG = CONFIG['datasets']['caltech']
 to_tensor = transforms.ToTensor()
 
 
+
+class SubsetWithLabels(Subset):
+    def __init__(self, dataset, indices, new_labels):
+        super().__init__(dataset, indices)
+        self.new_labels = new_labels
+
+    def __getitem__(self, idx):
+        data, _ = super().__getitem__(idx)
+        new_label = self.new_labels[idx]
+        return data, new_label
+
+    def __getitems__(self, indices: List[int]) -> List[T_co]:
+        # print(indices)
+        return [self.__getitem__(i) for i in indices]
+
+    def __len__(self):
+        return len(self.indices)
+
+
+class CaltechRGB101():
+    def __init__(self, root, transform=None, download=False):
+        self.transform = transform
+        self.dataset = Caltech101(root=root, transform=None, download=download)
+        self.y = self.dataset.y
+        self.categories = self.dataset.categories
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, index: int):
+        image, label = self.dataset[index]
+        image = image.convert('RGB') if image.mode != 'RGB' else image
+        image = self.transform(image) if self.transform else image
+        return image, label
+
+
 class CaltechDataModule(pl.LightningDataModule):
     download = False
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
+    excluded_class = 20
 
     def __init__(
         self,
-        train_transforms=None,
-        eval_transforms=None,
+        train_transform=None,
+        eval_transform=None,
         also_use_default_transforms: bool = True,  # MINE
         data_dir=DATA_CONFIG['path'],
         batch_size=CONFIG['batch_size'],
@@ -27,6 +69,7 @@ class CaltechDataModule(pl.LightningDataModule):
         train_val_test_split=CONFIG['train_val_test_split'],
         dataloader_timeout=CONFIG['dataloader_timeout'],
         seed=CONFIG['seed'],
+        top_n=DATA_CONFIG['top_n'],
     ):
         super().__init__()
         self.batch_size = batch_size
@@ -37,8 +80,9 @@ class CaltechDataModule(pl.LightningDataModule):
         self.train_val_test_split = train_val_test_split
         self.dataloader_timeout = dataloader_timeout
         self.seed = seed
+        self.top_n = top_n
         self.train_transforms, self.eval_transforms = self.get_correct_transforms(
-            also_use_default_transforms, train_transforms, eval_transforms
+            also_use_default_transforms, train_transform, eval_transform
         )
         # datasets
         self.train_dataset = None
@@ -67,30 +111,35 @@ class CaltechDataModule(pl.LightningDataModule):
             combined_eval_transform = base_transform
         return combined_train_transform, combined_eval_transform
 
-    def setup(self, stage=None) -> None:
-        full_dataset = Caltech101(
+    def get_dataset(self, transform=None):
+        dataset = CaltechRGB101(
             root=self.data_dir,
-            transform=self._get_default_transform(),
-            download=self.download
+            transform=transform,
         )
-        # test batch
-        _test_dl = DataLoader(full_dataset, batch_size=2)
-        test_batch = next(iter(_test_dl))
+        if self.top_n is None:
+            return dataset
+        filtered_indices = [i for i, target in enumerate(dataset.y) if target != self.excluded_class]
+        class_counts = Counter([dataset.y[i] for i in filtered_indices])
+        top_classes = [cls for cls, _ in class_counts.most_common(self.top_n)]
+        filtered_indices = [i for i, target in enumerate(dataset.y) if target in top_classes]
+        class_to_new_idx = {old_idx: new_idx for new_idx, old_idx in enumerate(top_classes)}
+        new_targets = [class_to_new_idx[dataset.y[i]] for i in filtered_indices]
+        filtered_dataset = SubsetWithLabels(dataset, filtered_indices, new_targets)
+        filtered_dataset.classes = [dataset.categories[cls] for cls in top_classes]
+        return filtered_dataset
+
+    def setup(self, stage=None) -> None:
+        train_dataset = self.get_dataset(transform=self.train_transforms)
+        eval_dataset = self.get_dataset(transform=self.eval_transforms)
 
         # Split the dataset into train, val, test
         train_subset, val_subset, test_subset = random_split(
-            full_dataset, self.train_val_test_split,
+            train_dataset, self.train_val_test_split,
             generator=torch.Generator().manual_seed(self.seed)
         )
-        self.train_dataset = torch.utils.data.Subset(
-            Caltech101(root=self.data_dir, transform=self.train_transforms), train_subset.indices
-        )
-        self.val_dataset = torch.utils.data.Subset(
-            Caltech101(root=self.data_dir, transform=self.eval_transforms), val_subset.indices
-        )
-        self.test_dataset = torch.utils.data.Subset(
-            Caltech101(root=self.data_dir, transform=self.eval_transforms), test_subset.indices
-        )
+        self.train_dataset = Subset(train_dataset, train_subset.indices)
+        self.val_dataset = Subset(eval_dataset, val_subset.indices)
+        self.test_dataset = Subset(eval_dataset, test_subset.indices)
 
     def get_dataloader(self, dataset, shuffle):
         return DataLoader(
@@ -100,8 +149,6 @@ class CaltechDataModule(pl.LightningDataModule):
             pin_memory=self.pin_memory,
             shuffle=shuffle,
             timeout=self.dataloader_timeout,
-            # TODO: fix greyscale images
-            # collate_fn=self.collate_fn
         )
 
     def train_dataloader(self):
@@ -119,21 +166,7 @@ class CaltechDataModule(pl.LightningDataModule):
 
 
 
-
 if __name__ == '__main__':
-    train_dl, val_dl, _ = CaltechDataModule(batch_size=1).get_setup_dataloader()
-    print(f"Train batches: {len(val_dl)}")
-    iterator = iter(val_dl)
-    num_errors = 0
-    for idx in range(len(val_dl)):
-        try:
-            batch = next(iterator)
-            print(idx)
-        except StopIteration:
-            break
-        except Exception as e:
-            num_errors += 1
-            print("ERROR")
-
-    print("ERRORS:", num_errors)
-
+    train_dl, _, _ = CaltechDataModule(num_workers=1).get_setup_dataloader()
+    batch = next(iter(train_dl))
+    print(len(train_dl))
