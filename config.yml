@@ -1,5 +1,5 @@
 # training parameters
-epochs: 30
+epochs: 10
 limit_train_batches:
 limit_val_batches:
 limit_test_batches:
@@ -31,23 +31,26 @@ datasets:
     image_size: 128
     num_labels: 19
   imagenet:
-    path: /media/storagecube/data/shared/datasets/ImageNet-2012
     task: multiclass
     input_channels: 3
+    path: /media/storagecube/data/shared/datasets/ImageNet-2012
     image_size: 224
     num_classes: 1000
   caltech:
-    path: /media/storagecube/data/shared/datasets/Caltech101
     task: multiclass
     input_channels: 3
     image_size: 224
     num_classes: 102
+    path: /media/storagecube/data/shared/datasets/Caltech101
   deepglobe:
-    path: '/media/storagecube/data/shared/datasets/deepGlobe'
-    labels_path:
+    task: multilabel
+    input_channels: 3
+    image_size: 120
+    num_labels: 6
+    path: '/media/storagecube/data/shared/datasets/deepGlobe/ML_DeepGlobe/patches.lmdb'
+    labels_path: '/media/storagecube/data/shared/datasets/deepGlobe/ML_DeepGlobe/labels.parquet'
     csv_paths:
       train: '/media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_train.csv'
-      val: '/media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_test.csv'
+      validation: '/media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_test.csv'
       test: '/media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_test.csv'
-    image_size: 120
 

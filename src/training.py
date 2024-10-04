@@ -29,6 +29,17 @@ BEN_LABELS = {
     18: ("Marine waters", "Marine"),
 }
 
+DEEPGLOBE_LABELS = {
+    0: "urban_land",
+    1: "agricultural_land",
+    2: "rangeland",
+    3: "forest_land",
+    4: "water",
+    5: "barren_land",
+}
+
+
+
 
 class TrainingModule(LightningModule):
     loss_fns = {'multiclass': nn.CrossEntropyLoss(), 'multilabel': nn.BCEWithLogitsLoss()}
@@ -48,6 +59,10 @@ class TrainingModule(LightningModule):
             'num_labels': dataset_config.get('num_labels', None),
             'task': dataset_config['task']
         }
+        if dataset_name == 'bigearthnet':
+            self.target_names = [label[1] for label in BEN_LABELS.values()]
+        elif dataset_name == 'deepglobe':
+            self.target_names = [label for label in DEEPGLOBE_LABELS.values()]
         self.simple_metrics = ['accuracy', 'precision', 'recall', 'f1']
         self.accuracy_micro = Accuracy(**metric_data, average='micro')
         self.precision_micro = Precision(**metric_data, average='micro')
@@ -136,9 +151,9 @@ class TrainingModule(LightningModule):
             prediction = torch.sigmoid(raw_prediction)
             prediction = prediction.gt(0.5).tolist()[0]
             pred_range = range(len(prediction))
-            tp_pred = [BEN_LABELS[i][1] for i in pred_range if prediction[i] and label[i]]
-            fp_pred = [BEN_LABELS[i][1] for i in pred_range if prediction[i] and (not label[i])]
-            fn_pred = [BEN_LABELS[i][1] for i in pred_range if (not prediction[i]) and label[i]]
+            tp_pred = [self.target_names[i] for i in pred_range if prediction[i] and label[i]]
+            fp_pred = [self.target_names[i] for i in pred_range if prediction[i] and (not label[i])]
+            fn_pred = [self.target_names[i] for i in pred_range if (not prediction[i]) and label[i]]
             caption = f"TP: {tp_pred}\n, FP: {fp_pred}\n, FN: {fn_pred}"
         elif self.task == 'multiclass':
             label = labels[idx].item()
@@ -161,9 +176,8 @@ class TrainingModule(LightningModule):
         predictions, labels = zip(*self.val_step_outputs)
         predictions = torch.cat(predictions)
         labels = torch.cat(labels)
-        target_names = [label[1] for label in BEN_LABELS.values()] if self.task == 'multilabel' else None
         report = classification_report(labels.numpy(), predictions.numpy(), zero_division=0,
-                                       output_dict=True, target_names=target_names)
+                                       output_dict=True, target_names=self.target_names)
         report_table = wandb.Table(columns=["class", "precision", "recall", "f1-score", "support"])
         for label, metrics in report.items():
             if isinstance(metrics, dict):
