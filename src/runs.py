@@ -33,7 +33,7 @@ class Run:
 
     def __init__(self, dataset_name, model_name, devices, do_training=True, pretrained=False,
                  val_transform=None, val_transform_name=None, val_transform_param=None,
-                 logger=None):
+                 logger=None, random_id=420000):
         # arguments
         self.log = logger or logging.getLogger("Run")
         self.log.setLevel(logging.DEBUG)
@@ -49,7 +49,7 @@ class Run:
         self.data_config = CONFIG['datasets'][dataset_name]
         self.train_dl, self.val_dl, self.test_dl = self.dl_collection.get_dataloader(
             dataset_name=self.dataset_name,
-            val_transform=self.val_transform
+            eval_transform=self.val_transform
         )
         self.model = self.model_collection.get_model(
             model_name=self.model_name,
@@ -66,14 +66,14 @@ class Run:
             filename=f'{dataset_name}-{model_name}',
             extended=True
         )
-        self.run_name = self._init_run_name()
+        self.run_name = self._init_run_name(random_id)
         self.logger = self._init_logger()
         self.trainer = self._init_trainer()
 
-    def _init_run_name(self):
+    def _init_run_name(self, random_id):
         train_type = 'ST' if self.do_training else 'PT' if self.pretrained else 'NT'
         transform_params_log = f'-{self.val_transform_name}-{self.val_transform_param}' if train_type != 'ST' else ''
-        return f"{self.dataset_name}-{self.model_name}-{train_type}{transform_params_log}-{randint(0, 999999):06d}"
+        return f"{self.dataset_name}-{self.model_name}-{train_type}{transform_params_log}-{random_id:06d}"
 
     def _init_logger(self):
         logger_tags = [
@@ -103,12 +103,12 @@ class Run:
             max_epochs=CONFIG['epochs'],
             logger=self.logger,
             profiler=self.profiler,
-            devices=self.devices,
+            # devices=self.devices,
             callbacks=[checkpoint_callback] if self.do_training else [],
             limit_train_batches=CONFIG['limit_train_batches'],
             limit_val_batches=CONFIG['limit_val_batches'],
             limit_test_batches=CONFIG['limit_test_batches'],
-            enable_model_summary=False
+            enable_model_summary=False,
         )
         return trainer
 
@@ -177,8 +177,10 @@ class RunManager:
         self.continue_on_error = continue_on_error
         self.train = train
         self.pretrained = pretrained
-        self.device = self.determine_gpu() if device is None else [device]
-        utilization = print_gpu_info(self.device)
+        # self.device = self.determine_gpu() if device is None else [device]
+        self.device = None
+        self.random_ids = [randint(0, 999999) for _ in range(1000)]
+        utilization = print_gpu_info()
         if int(utilization) > 0:
             self.log.warning(f"GPU {self.device} is already in use")
         seed_everything(42)
@@ -229,7 +231,8 @@ class RunManager:
                       val_transform_name=val_transform_dict['type'],
                       val_transform_param=val_transform_dict['param'],
                       logger=self.log,
-                      devices=self.device)
+                      devices=self.device,
+                      random_id=self.random_ids[run_idx])
             run.execute()
         except Exception as e:
             self.log.error(f"Run failed for {model} on {dataset}", e)
@@ -257,6 +260,8 @@ class RunManager:
 
 
 if __name__ == '__main__':
+
+    wandb.finish()
     run_models = ['efficientnet', 'swin', 'convnext', 'resnet']
     run_datasets = DataLoaderFactory().dataset_names
     run_datasets = ['caltech']  # noqa
