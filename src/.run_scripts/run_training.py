@@ -22,6 +22,6 @@ run_manager = RunManager(
     train=True,
     pretrained=False,
     test_run=False,
-    verbose=True,
+    verbose=False,
 )
 run_manager.execute_runs()

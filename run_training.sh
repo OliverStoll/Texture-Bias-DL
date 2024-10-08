@@ -14,4 +14,4 @@ TIMESTAMP="$hours:00:00"
 echo "Running for $TIMESTAMP with $GPU GPUs and $CPU CPUs"
 
 # run the run.sh script
-srun --gpus=$GPU --cpus-per-task=$CPU --time=$TIMESTAMP ./src/.run_scripts/run.sh run_training.py $DATASET
+sbatch --gpus=$GPU --cpus-per-task=$CPU --time=$TIMESTAMP --job-name=$DATASET --wrap="./src/.run_scripts/run.sh run_training.py $DATASET"

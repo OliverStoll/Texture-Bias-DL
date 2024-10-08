@@ -274,3 +274,4 @@ if __name__ == '__main__':
         device=3,
     )
     run_manager.execute_runs()
+    wandb.alert(title="All runs finished", text="Completed successfully")

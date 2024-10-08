@@ -49,7 +49,7 @@ datasets:
   deepglobe:
     task: multilabel
     input_channels: 3
-    image_size: 120
+    image_size: 128
     num_labels: 6
     path: '/media/storagecube/data/shared/datasets/deepGlobe/ML_DeepGlobe/patches.lmdb'
     labels_path: '/media/storagecube/data/shared/datasets/deepGlobe/ML_DeepGlobe/labels.parquet'
