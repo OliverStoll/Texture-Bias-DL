@@ -86,10 +86,22 @@ def test_transform(transform, transform_name, param, dataset):
     os.makedirs(save_path, exist_ok=True)
     image_tensor = get_example_tensor(dataset)
     transformed_tensor = transform(image_tensor)
+    transformed_tensor = denormalize_tensor(transformed_tensor, dataset)
     if dataset == 'bigearthnet':
         transformed_tensor = transformed_tensor[BEN_CHANNELS, :, :]
+    # switch channels inside first dimension from bgr to rgb
+    correct_tuple = (0, 1, 2) # gelb-grün
+    correct_tuple = (2, 1, 0) # türkis
+    correct_tuple = (2, 0, 1) # blau
+    correct_tuple = (1, 2, 0) # lila
+    correct_tuple = (1, 0, 2) # gelb-braun
+    correct_tuple = (0, 2, 1) # lila-weiß?
+    correct_tuple = (1, 2, 0)  # lila
+    transformed_tensor = transformed_tensor[correct_tuple, :, :]
     transformed_image = to_image(transformed_tensor)
-    transformed_image.save(f"{save_path}/{dataset}_{param}.png")
+    example_img_path = f"{save_path}/{dataset}_{param}.png"
+    print(f"saving image to {example_img_path}")
+    transformed_image.save(example_img_path)
 
 
 

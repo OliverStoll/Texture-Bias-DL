@@ -137,7 +137,7 @@ class DeepglobeDataModule(pl.LightningDataModule):
         return transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize(mean=self.means, std=self.stds),
-            # transforms.Resize((self.image_size, self.image_size)),
+            transforms.Resize((self.image_size, self.image_size)),
         ])
 
     def get_correct_transforms(self, also_use_default_transforms, train_transform,

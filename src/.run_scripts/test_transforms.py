@@ -4,22 +4,40 @@ from models import ModelFactory
 from datasets import DataLoaderFactory
 
 
-if __name__ == '__main__':
-    run_datasets = ['bigearthnet', 'imagenet']
-    run_models = ModelFactory().all_model_names
-    val_transforms = TransformFactory().get_all_default_transforms()
+run_datasets = DataLoaderFactory().dataset_names
+run_models = ModelFactory().all_model_names
+val_transforms = TransformFactory().get_all_default_transforms()
 
-    # custom values
-    run_models = ['resnet', 'mvit', 'densenet', 'deit']
-    val_transforms = TransformFactory().get_transforms(transform_name='color_jitter', param_values=[0])
+# resnet,efficientnet,convnext,regnet,densenet,
+# resnext,mobilenet,xception,inception,regnety,
+# vit,deit,swin,cait,pvt,pit,beit,convmixer,mvit
 
-    run_manager = RunManager(
-        models=run_models,
-        datasets=run_datasets,
-        eval_transforms=val_transforms,
-        continue_on_error=True,
-        test_run=100,
-        train=False,
-        device=2,
-    )
-    run_manager.execute_runs()
+
+# take first argument as dataset
+try:
+    dataset = os.sys.argv[1]
+    run_datasets = [dataset]
+except IndexError:
+    print("No input dataset")
+
+try:
+    models_str = os.sys.argv[2]
+    print(models_str)
+    try:
+        model_start_index = int(models_str)
+        run_models = models[model_start_index:]
+    except:
+        run_models = models_str.split(',')
+except IndexError:
+    print("No input models")
+
+
+run_manager = RunManager(
+    models=run_models,
+    datasets=run_datasets,
+    eval_transforms=val_transforms,
+    continue_on_error=True,
+    test_run=100,
+    train=False,
+)
+run_manager.execute_runs()

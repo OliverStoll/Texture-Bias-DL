@@ -51,8 +51,10 @@ class TrainingModule(LightningModule):
     log_mAP_classes = False  # DISABLED DUE TO CLUTTER
     all_target_names = {
         'bigearthnet': [label[1] for label in BEN_LABELS.values()],
+        'rgb_bigearthnet': [label[1] for label in BEN_LABELS.values()],
         'deepglobe': [label for label in DEEPGLOBE_LABELS.values()],
         'caltech': [label for label in CALTECH_CLASSNAMES_20],
+        'caltech_120': [label for label in CALTECH_CLASSNAMES_20],
         'imagenet': range(1000)
     }
 

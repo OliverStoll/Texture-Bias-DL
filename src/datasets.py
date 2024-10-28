@@ -22,13 +22,19 @@ class DataLoaderFactory:
     data_modules = {
         'imagenet': ImageNetDataModule,
         'caltech': CaltechDataModule,
+        'caltech_120': CaltechDataModule,
         'bigearthnet': BENv2DataModule,
+        'rgb_bigearthnet': BENv2DataModule,
         'deepglobe': DeepglobeDataModule,
     }
     dataset_names = list(data_modules.keys())
 
     def get_datamodule(self, dataset_name, train_transform, eval_transform):
         data_module = self.data_modules[dataset_name]
+        if dataset_name in ['caltech_120', 'rgb_bigearthnet']:
+            return data_module(train_transform=train_transform,
+                               eval_transform=eval_transform,
+                               dataset_name=dataset_name)
         return data_module(train_transform=train_transform, eval_transform=eval_transform)
 
     def get_dataloader(self, dataset_name, train_transform=None, eval_transform=None):
@@ -43,3 +49,8 @@ class DataLoaderFactory:
 
 if __name__ == "__main__":
     print("DATASETS")
+    factory = DataLoaderFactory()
+    train, _, _ = factory.get_dataloader('caltech_120')
+    batch = next(iter(train))
+    print()
+

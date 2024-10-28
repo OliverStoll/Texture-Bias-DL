@@ -22,7 +22,7 @@ wandb.require("core")
 
 class Run:
     """ Run class to execute a training run on a specific model and dataset """
-    logs_path = f'{ROOT_DIR}/logs'  # '/media/storagecube/olivers/logs'
+    logs_path = '/media/storagecube/olivers/logs'  # f'{ROOT_DIR}/logs'
     checkpoint_path = '/media/storagecube/olivers/logs/checkpoints'
     dl_collection = DataLoaderFactory()
     model_collection = ModelFactory()
@@ -95,7 +95,7 @@ class Run:
     def _init_trainer(self):
         checkpoint_callback = ModelCheckpoint(
             monitor=self.main_metric,
-            dirpath=f'{self.checkpoint_path}/{self.model_name}',
+            dirpath=self.checkpoint_dir,
             filename='{epoch:02d}-{'+self.main_metric+':.3f}',
             mode='max'
         )

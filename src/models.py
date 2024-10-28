@@ -18,9 +18,6 @@ class ModelFactory:
         'xception': 'legacy_xception',  # 22.9M
         'inception': 'inception_v3',  # 27M
         'regnety': 'regnety_004',  # 20M
-        ############################
-        # 'vgg': 'vgg11_bn',  # 132M  (too big)
-        # 'wide_resnet': 'wide_resnet50_2',   # 90M  (too big)
     }
     transformer_models = {
         "vit": "vit_tiny_patch16_224",  # 5.7M
@@ -31,11 +28,6 @@ class ModelFactory:
         "pit": "pit_ti_224",  # 4.9M
         'beit': 'beit_base_patch16_224',  # 86M TODO: TOO BIG
         'convmixer': 'convmixer_768_32',  # 21M
-        # "crossvit": "crossvit_9_240",  # 26.9M  TENSOR SIZE MISMATCH
-        # "cvt": "cvt-13",  # 20M   doesnt exist
-        # "t2t_vit": "t2t_vit_14",  # 21.5M  doesnt exist
-        # "segformer": "segformer_b0"  # 3.8M  doesnt exist
-        # 'flexivit': 'flexivit_small',  # 22M  TODO: TENSOR SIZE ISSUES
         'mvit': 'mvitv2_tiny',  # 25M
     }
     all_models = {**cnn_models, **transformer_models}

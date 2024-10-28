@@ -8,6 +8,7 @@ from eval_transforms.bilateral import BilateralFilterTransform
 from eval_transforms.median import MedianFilterTransform
 from eval_transforms.gaussian_blur import GaussianBlurTransform
 from eval_transforms.channel_shuffle import ChannelShuffleTransform
+from eval_transforms.channel_inversion import ChannelInversionTransform
 from eval_transforms.greyscale import GrayScaleTransform
 from eval_transforms.color_jitter import ColorJitterTransform
 from sanity_checks.check_transforms import test_transform
@@ -70,18 +71,18 @@ class TransformFactory:
                 'param_values': [0, 2, 3, 6, 12],
                 'param_values_minimal': [0, 2, 12],
             },
+            'channel_inversion': {
+                'class': ChannelInversionTransform,
+                'param_name': 'n',
+                'param_values': [0, 1, 2, 3, 6, 12],
+                'param_values_minimal': [0, 1, 2, 12]
+            },
             'greyscale': {
                 'class': GrayScaleTransform,
                 'param_name': 'enabled',
                 'param_values': [0, 1],
                 'param_values_minimal': [0, 1],
-            },
-            'brightness_jitter': {
-                'class': ColorJitterTransform,
-                'param_name': 'brightness',
-                'param_values': [0.1, 0.2, 0.3],
-                'param_values_minimal': [0.1, 0.2],
-            },
+            }
         }
 
 

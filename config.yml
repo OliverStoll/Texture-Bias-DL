@@ -13,22 +13,28 @@ seed: 42
 dataloader_timeout: 600
 
 # paths
-output_dir: '/home/olivers/colab-master-thesis/output'
+output_dir: '/home/olivers/master-thesis/output'
 checkpoint_dir: '/media/storagecube/olivers/logs/checkpoints'
 example_image: '/media/storagecube/data/shared/datasets/ImageNet-2012/n01440764/n01440764_10026.JPEG'
 example_tensors:
-  imagenet: '/home/olivers/colab-master-thesis/output/test_data/Imagenet_tensor.pt'
-  bigearthnet: '/home/olivers/colab-master-thesis/output/test_data/BEN_tensor.pt'
-example_BEN_tensor_unnormalized: '/home/olivers/colab-master-thesis/output/test_data/BEN_tensor_unnormalized.pt'
-example_image_output: "/home/olivers/colab-master-thesis/output/transform_examples"
+  imagenet: '/home/olivers/master-thesis/output/test_data/Imagenet_tensor.pt'
+  bigearthnet: '/home/olivers/master-thesis/output/test_data/BEN_tensor.pt'
+example_BEN_tensor_unnormalized: '/home/olivers/master-thesis/output/test_data/BEN_tensor_unnormalized.pt'
+example_image_output: "/home/olivers/master-thesis/output/transform_examples"
 
 
 # dataset parameters
 datasets:
   bigearthnet:
     task: multilabel
-    input_channels: 12  # 14
-    image_size: 128
+    input_channels: 12
+    image_size: 120
+    num_labels: 19
+    epochs: 10
+  rgb_bigearthnet:
+    task: multilabel
+    input_channels: 3
+    image_size: 120
     num_labels: 19
     epochs: 10
   imagenet:
@@ -46,10 +52,18 @@ datasets:
     num_classes: 20  # manually set
     path: /media/storagecube/data/shared/datasets/Caltech101
     epochs: 20
+  caltech_120:
+    task: multiclass
+    input_channels: 3
+    image_size: 120
+    top_n: 20
+    num_classes: 20  # manually set
+    path: /media/storagecube/data/shared/datasets/Caltech101
+    epochs: 20
   deepglobe:
     task: multilabel
     input_channels: 3
-    image_size: 128
+    image_size: 120
     num_labels: 6
     path: '/media/storagecube/data/shared/datasets/deepGlobe/ML_DeepGlobe/patches.lmdb'
     labels_path: '/media/storagecube/data/shared/datasets/deepGlobe/ML_DeepGlobe/labels.parquet'

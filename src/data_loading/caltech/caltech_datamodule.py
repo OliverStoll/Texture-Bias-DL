@@ -10,7 +10,6 @@ from torchvision.datasets import Caltech101
 import pytorch_lightning as pl
 from utils.config import CONFIG
 
-DATA_CONFIG = CONFIG['datasets']['caltech']
 to_tensor = transforms.ToTensor()
 
 
@@ -58,29 +57,28 @@ class CaltechDataModule(pl.LightningDataModule):
 
     def __init__(
         self,
+        dataset_name='caltech',
         train_transform=None,
         eval_transform=None,
         also_use_default_transforms: bool = True,  # MINE
-        data_dir=DATA_CONFIG['path'],
         batch_size=CONFIG['batch_size'],
         num_workers=CONFIG['num_workers'],
         pin_memory=CONFIG['pin_memory'],
-        image_size=DATA_CONFIG['image_size'],
         train_val_test_split=CONFIG['train_val_test_split'],
         dataloader_timeout=CONFIG['dataloader_timeout'],
         seed=CONFIG['seed'],
-        top_n=DATA_CONFIG['top_n'],
     ):
         super().__init__()
         self.batch_size = batch_size
         self.num_workers = num_workers
-        self.data_dir = data_dir
         self.pin_memory = pin_memory
-        self.image_size = image_size
         self.train_val_test_split = train_val_test_split
         self.dataloader_timeout = dataloader_timeout
         self.seed = seed
-        self.top_n = top_n
+        self.data_config = CONFIG['datasets'][dataset_name]
+        self.top_n = self.data_config['top_n']
+        self.data_dir = self.data_config['path']
+        self.image_size = self.data_config['image_size']
         self.train_transforms, self.eval_transforms = self.get_correct_transforms(
             also_use_default_transforms, train_transform, eval_transform
         )
