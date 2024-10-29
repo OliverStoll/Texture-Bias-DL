@@ -1,7 +1,7 @@
-from utils.logger import create_logger
+from common_utils.logger import create_logger
 import albumentations as A
 
-from eval_transforms.grid_shuffle import GridShuffleTransform
+from eval_transforms.grid_shuffle import PatchShuffleTransform
 from eval_transforms.sobel import SobelFilterTransform
 from eval_transforms.canny import CannyFilterTransform
 from eval_transforms.bilateral import BilateralFilterTransform
@@ -11,6 +11,7 @@ from eval_transforms.channel_shuffle import ChannelShuffleTransform
 from eval_transforms.channel_inversion import ChannelInversionTransform
 from eval_transforms.greyscale import GrayScaleTransform
 from eval_transforms.color_jitter import ColorJitterTransform
+from eval_transforms.patch_rotation import PatchRotationTransform
 from sanity_checks.check_transforms import test_transform
 from datasets import DataLoaderFactory
 
@@ -59,8 +60,14 @@ class TransformFactory:
             #     'param_name': 'thresholds',
             #     'param_values_minimal': [(50, 150), (100, 200), (150, 250)],
             # },
-            'grid_shuffle': {
-                'class': GridShuffleTransform,
+            'patch_shuffle': {
+                'class': PatchShuffleTransform,
+                'param_name': 'grid_size',
+                'param_values': [1, 2, 4, 6, 8, 11, 15],
+                'param_values_minimal': [1, 4, 8, 15],
+            },
+            'patch_rotation': {
+                'class': PatchRotationTransform,
                 'param_name': 'grid_size',
                 'param_values': [1, 2, 4, 6, 8, 11, 15],
                 'param_values_minimal': [1, 4, 8, 15],

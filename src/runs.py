@@ -6,8 +6,8 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.profilers import SimpleProfiler
 from pytorch_lightning.callbacks import ModelCheckpoint
-from utils.config import ROOT_DIR, CONFIG
-from utils.logger import create_logger
+from common_utils.config import ROOT_DIR, CONFIG
+from common_utils.logger import create_logger
 from random import randint
 
 from datasets import DataLoaderFactory
@@ -22,7 +22,7 @@ wandb.require("core")
 
 class Run:
     """ Run class to execute a training run on a specific model and dataset """
-    logs_path = '/media/storagecube/olivers/logs'  # f'{ROOT_DIR}/logs'
+    logs_path = '/media/storagecube/olivers/logs/logs'  # f'{ROOT_DIR}/logs'
     checkpoint_path = '/media/storagecube/olivers/logs/checkpoints'
     dl_collection = DataLoaderFactory()
     model_collection = ModelFactory()
@@ -111,10 +111,9 @@ class Run:
         return trainer
 
     def load_checkpoint(self):
-        checkpoint_dir = f"{CONFIG['checkpoint_dir']}/{self.model_name}"
         best_score = 0
         best_score_checkpoint = ""
-        for checkpoint in os.listdir(checkpoint_dir):
+        for checkpoint in os.listdir(self.checkpoint_dir):
             if self.main_metric not in checkpoint:
                 continue
             score = checkpoint.split('=')[2].replace('.ckpt', '').split('-')[0]
@@ -123,7 +122,7 @@ class Run:
                 best_score = score
                 best_score_checkpoint = checkpoint
         assert best_score_checkpoint != ""
-        checkpoint_path = f"{checkpoint_dir}/{best_score_checkpoint}"
+        checkpoint_path = f"{self.checkpoint_dir}/{best_score_checkpoint}"
         self.log.info(f"Loading checkpoint {best_score_checkpoint}")
         model_module = TrainingModule.load_from_checkpoint(
             checkpoint_path,

@@ -1,7 +1,7 @@
 from configilm.extra.DataModules import BENv2DataModule
 from configilm.extra.data_dir import dataset_paths
 
-from utils.config import CONFIG
+from common_utils.config import CONFIG
 
 
 benv2_mapping = dataset_paths['benv2'][1]  # 1 for erde server

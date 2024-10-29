@@ -2,8 +2,8 @@ import torch
 from torchvision.transforms import Compose
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
-from utils.logger import create_logger
-from utils.config import CONFIG
+from common_utils.logger import create_logger
+from common_utils.config import CONFIG
 from torchvision.transforms import ToTensor
 
 from models import ModelFactory

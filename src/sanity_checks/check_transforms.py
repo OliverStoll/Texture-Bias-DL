@@ -4,7 +4,7 @@ import torchvision.transforms as transforms
 from torchvision.transforms import ToTensor, ToPILImage
 from PIL import Image
 
-from utils.config import CONFIG
+from common_utils.config import CONFIG
 
 
 to_tensor = ToTensor()

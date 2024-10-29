@@ -1,6 +1,6 @@
 import os
 
-from utils.config import CONFIG
+from common_utils.config import CONFIG
 from sanity_checks.check_gpu import print_gpu_info
 
 

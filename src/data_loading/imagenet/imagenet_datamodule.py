@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader, Subset
 from torchvision.transforms import Compose
 from sklearn.model_selection import train_test_split
 import numpy as np
-from utils.config import CONFIG
+from common_utils.config import CONFIG
 from timm.data import create_transform, resolve_data_config
 from timm.data.transforms import ToTensor
 
@@ -18,8 +18,8 @@ class ImageNetDataModule(LightningDataModule):
     ignore_imagenet_transform = ['flexivit']
 
     def __init__(self,
-                 train_transforms=None,
-                 eval_transforms=None,
+                 train_transform=None,
+                 eval_transform=None,
                  also_use_default_transforms: bool = True,
                  data_dir: str = DATA_CONFIG['path'],
                  batch_size: int = CONFIG['batch_size'],
@@ -37,7 +37,7 @@ class ImageNetDataModule(LightningDataModule):
         self.shuffle = shuffle
         self.train_val_test_split = train_val_test_split
         self.train_transform, self.eval_transform = self.get_correct_transforms(
-            also_use_default_transforms, train_transforms, eval_transforms
+            also_use_default_transforms, train_transform, eval_transform
         )
         self.dataloader_timeout = dataloader_timeout
         self.train_dataset = None

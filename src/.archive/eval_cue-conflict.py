@@ -5,8 +5,8 @@ from sanity_checks.check_transforms import to_tensor
 from torchvision.models import resnet50
 
 from models import ModelFactory
-from utils.config import CONFIG
-from utils.logger import create_logger
+from common_utils.config import CONFIG
+from common_utils.logger import create_logger
 from probabilities_to_decision import ImageNetProbabilitiesTo16ClassesMapping
 
 

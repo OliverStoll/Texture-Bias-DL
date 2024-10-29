@@ -8,7 +8,7 @@ from torchvision import transforms
 from torch.utils.data import random_split, DataLoader
 from torchvision.datasets import Caltech101
 import pytorch_lightning as pl
-from utils.config import CONFIG
+from common_utils.config import CONFIG
 
 to_tensor = transforms.ToTensor()
 

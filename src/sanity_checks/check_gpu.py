@@ -1,7 +1,7 @@
 import os
 
-from utils.logger import create_logger
-from utils.config import CONFIG
+from common_utils.logger import create_logger
+from common_utils.config import CONFIG
 
 
 log = create_logger("SanityCheck GPU")

@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from sanity_checks.check_transforms import test_transform
 
 
-class GridShuffleTransform:
+class PatchShuffleTransform:
     def __init__(self, grid_size):
         self.grid_size = grid_size
         self.dims = None
@@ -31,22 +31,22 @@ class GridShuffleTransform:
 
         image, dims = self.resize_to_fit_grid(image)
         channels, rows, cols = image.shape
-        grid_width = cols // self.grid_size
-        grid_height = rows // self.grid_size
+        patch_width = cols // self.grid_size
+        patch_height = rows // self.grid_size
         grid_positions = [(i, j) for i in range(self.grid_size) for j in range(self.grid_size)]
         np.random.shuffle(grid_positions)  # noqa
         shuffled_image = torch.zeros_like(image)
 
         # Iterate over the grid positions and copy the corresponding grid from the original image
         for i, (grid_row, grid_col) in enumerate(grid_positions):
-            start_row = grid_row * grid_height
-            end_row = start_row + grid_height
-            start_col = grid_col * grid_width
-            end_col = start_col + grid_width
+            start_row = grid_row * patch_height
+            end_row = start_row + patch_height
+            start_col = grid_col * patch_width
+            end_col = start_col + patch_width
             shuffled_image[:, start_row:end_row, start_col:end_col] = image[
                 :,
-                (i // self.grid_size) * grid_height: (i // self.grid_size + 1) * grid_height,
-                (i % self.grid_size) * grid_width: (i % self.grid_size + 1) * grid_width
+                (i // self.grid_size) * patch_height: (i // self.grid_size + 1) * patch_height,
+                (i % self.grid_size) * patch_width: (i % self.grid_size + 1) * patch_width
             ]
 
         rescaled_shuffled_image = self.rescale_to_original(shuffled_image)

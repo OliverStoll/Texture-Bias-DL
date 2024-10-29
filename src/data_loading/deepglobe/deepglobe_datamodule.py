@@ -6,7 +6,7 @@ import pytorch_lightning as pl
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-from utils.config import CONFIG
+from common_utils.config import CONFIG
 
 from sanity_checks.check_dataloader import check_dataloader
 

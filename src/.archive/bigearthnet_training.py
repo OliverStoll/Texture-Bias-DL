@@ -12,7 +12,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 
 from data_loading.BENv2DataModule import BENv2DataModule
 from models import ModelFactory
-from utils.config import CONFIG
+from common_utils.config import CONFIG
 
 wandb.require("core")
 

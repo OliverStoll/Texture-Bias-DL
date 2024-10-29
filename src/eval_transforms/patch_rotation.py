@@ -9,15 +9,15 @@ from sanity_checks.check_transforms import test_transform
 
 
 class PatchRotationTransform:
-    def __init__(self, patch_size):
-        self.patch_size = patch_size
+    def __init__(self, grid_size):
+        self.grid_size = grid_size
         self.dims = None
 
     def resize_to_fit_grid(self, tensor):
         channels, rows, cols = tensor.shape
         self.dims = (rows, cols)
-        new_rows = (rows // self.patch_size) * self.patch_size
-        new_cols = (cols // self.patch_size) * self.patch_size
+        new_rows = (rows // self.grid_size) * self.grid_size
+        new_cols = (cols // self.grid_size) * self.grid_size
         resized_tensor = F.interpolate(tensor.unsqueeze(0), size=(new_rows, new_cols), mode='nearest')
         return resized_tensor.squeeze(0), (rows, cols)
 
@@ -28,13 +28,13 @@ class PatchRotationTransform:
 
 
     def __call__(self, image):
-        """Takes an image, splits it into patch_size x patch_size patches and rotate them"""
+        """Takes an image, splits it into grid_size x grid_size patches and rotate them"""
 
         image, dims = self.resize_to_fit_grid(image)
         channels, rows, cols = image.shape
-        patch_width = cols // self.patch_size
-        patch_height = rows // self.patch_size
-        grid_positions = [(i, j) for i in range(self.patch_size) for j in range(self.patch_size)]
+        patch_width = cols // self.grid_size
+        patch_height = rows // self.grid_size
+        grid_positions = [(i, j) for i in range(self.grid_size) for j in range(self.grid_size)]
         rotated_image = torch.zeros_like(image)
 
         # Iterate over the patch positions and copy the corresponding patch from the original image
@@ -46,8 +46,8 @@ class PatchRotationTransform:
             end_col = start_col + patch_width
             area = image[
                 :,
-                (i // self.patch_size) * patch_height: (i // self.patch_size + 1) * patch_height,
-                (i % self.patch_size) * patch_width: (i % self.patch_size + 1) * patch_width
+                (i // self.grid_size) * patch_height: (i // self.grid_size + 1) * patch_height,
+                (i % self.grid_size) * patch_width: (i % self.grid_size + 1) * patch_width
             ]
             rotated_image[:, start_row:end_row, start_col:end_col] = torch.rot90(
                 input=area, k=k, dims=(1, 2)

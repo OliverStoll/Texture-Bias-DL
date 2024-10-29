@@ -8,7 +8,7 @@ import numpy as np
 # import transforms
 from torchvision import transforms
 
-from utils.config import CONFIG
+from common_utils.config import CONFIG
 
 
 if __name__ == '__main__':

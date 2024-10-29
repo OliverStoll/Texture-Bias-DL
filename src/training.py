@@ -5,8 +5,8 @@ from pytorch_lightning import LightningModule
 from torchmetrics import Accuracy, Precision, Recall, F1Score, AveragePrecision
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from sklearn.metrics import classification_report
-from utils.config import CONFIG
-from utils.logger import create_logger
+from common_utils.config import CONFIG
+from common_utils.logger import create_logger
 
 from data_loading.caltech.caltech_constants import CALTECH_CLASSNAMES_20
 
