@@ -16,10 +16,7 @@ dataloader_timeout: 600
 output_dir: '/home/olivers/master-thesis/output'
 checkpoint_dir: '/media/storagecube/olivers/logs/checkpoints'
 example_image: '/media/storagecube/data/shared/datasets/ImageNet-2012/n01440764/n01440764_10026.JPEG'
-example_tensors:
-  imagenet: '/home/olivers/master-thesis/output/test_data/Imagenet_tensor.pt'
-  bigearthnet: '/home/olivers/master-thesis/output/test_data/BEN_tensor.pt'
-example_BEN_tensor_unnormalized: '/home/olivers/master-thesis/output/test_data/BEN_tensor_unnormalized.pt'
+example_tensors_path: '/home/olivers/master-thesis/output/test_data'
 example_image_output: "/home/olivers/master-thesis/output/transform_examples"
 
 

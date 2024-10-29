@@ -80,3 +80,8 @@ class ResultsExtractor:
         if save_results:
             run_results_df.to_csv(self.results_df_path, index=False)
         return run_results_df
+
+
+if __name__ == '__main__':
+    pipeline = ResultsExtractor()
+    results = pipeline.get_results(save_results=True)

@@ -42,13 +42,18 @@ ben_mean_list = [ben_mean[key] for key in sorted(ben_mean.keys())]
 ben_std_list = [ben_std[key] for key in sorted(ben_std.keys())]
 BEN_CHANNELS = (3, 2, 1)
 
+# TODO: add mean & std for caltech & deepglobe
 MEANS = {
     'bigearthnet': ben_mean_list,
-    'imagenet': [0.485, 0.456, 0.406]
+    'imagenet': [0.485, 0.456, 0.406],
+    'caltech': [],
+    'deepglobe': []
 }
 STDS = {
     'bigearthnet': ben_std_list,
-    'imagenet': [0.229, 0.224, 0.225]
+    'imagenet': [0.229, 0.224, 0.225],
+    'caltech': [],
+    'deepglobe': []
 }
 
 
@@ -58,7 +63,7 @@ def get_example_image():
 
 
 def get_example_tensor(dataset):
-    tensor_path = CONFIG['example_tensors'][dataset]
+    tensor_path = f"{CONFIG['example_tensors_path']}/{dataset}.pt"
     tensor = torch.load(tensor_path)
     return tensor
 

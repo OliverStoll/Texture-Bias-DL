@@ -50,7 +50,10 @@ class DataLoaderFactory:
 if __name__ == "__main__":
     print("DATASETS")
     factory = DataLoaderFactory()
-    train, _, _ = factory.get_dataloader('caltech_120')
-    batch = next(iter(train))
-    print()
+    for dataset_name in factory.dataset_names:
+        train, _, _ = factory.get_dataloader(dataset_name)
+        batch = next(iter(train))
+        first_img_tensor = batch[0][0]
+        path = CONFIG['example_tensors_path'] + '/' + dataset_name + '.pt'
+        torch.save(first_img_tensor, path)
 
