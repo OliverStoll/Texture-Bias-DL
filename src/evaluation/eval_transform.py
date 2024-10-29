@@ -78,7 +78,8 @@ class ResultsPlotter:
                     pass
             avg_color = 'black'
         else:
-                if self.col
+            if self.color_idx >= len(self.colors):
+                self.color_idx = 0
             avg_color = self.colors[self.color_idx]
             self.color_idx += 1
         ax.plot([], [], linestyle=line_styles, label=dataset, color=avg_color)
@@ -145,7 +146,7 @@ class ResultsPlotter:
 
 
 if __name__ == '__main__':
-    results = ResultsExtractor().get_results()
+    results = ResultsExtractor().get_results(save)
     evaluator = ResultsPlotter(results=results)
     evaluator.plot_results(
         # models=['resnet', 'mvit', 'deit', 'densenet'],
