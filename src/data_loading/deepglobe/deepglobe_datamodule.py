@@ -100,8 +100,8 @@ class DeepGlobeDataset(Dataset):
 
 class DeepglobeDataModule(pl.LightningDataModule):
     num_cls = 6
-    means = [0.4095, 0.3808, 0.2836]
-    stds = [0.1509, 0.1187, 0.1081]
+    means = [0.4095 * 255, 0.3808 * 255, 0.2836 * 255]
+    stds = [0.1509 * 255, 0.1187 * 255, 0.1081 * 255]
 
     def __init__(self,
                  train_transform=None,
