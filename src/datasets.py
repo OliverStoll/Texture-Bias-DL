@@ -53,7 +53,8 @@ if __name__ == "__main__":
     for dataset_name in factory.dataset_names:
         train, _, _ = factory.get_dataloader(dataset_name)
         batch = next(iter(train))
-        first_img_tensor = batch[0][0]
-        path = CONFIG['example_tensors_path'] + '/' + dataset_name + '.pt'
-        torch.save(first_img_tensor, path)
+        for image_index in [0, 1, 2, 3]:
+            img_tensor = batch[image_index][0]
+            path = f"{CONFIG['example_tensors_path']}/{dataset_name}_{image_index}.pt"
+            torch.save(img_tensor, path)
 
