@@ -31,5 +31,5 @@ if __name__ == "__main__":
             transform=MedianFilterTransform(kernel_size=kernel_size),
             transform_name="median",
             param=kernel_size,
-            dataset='bigearthnet'
+            dataset='deepglobe'
         )

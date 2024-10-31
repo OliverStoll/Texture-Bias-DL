@@ -41,16 +41,19 @@ class BilateralFilterTransform:
 
         uint8_numpy_image = convert_tensor_to_np_uint8(image_tensor)
         image_channels = cv2.split(uint8_numpy_image)
-        filtered_channels = []
 
-        for channel in image_channels:
-            filtered_channel = cv2.bilateralFilter(
-                channel, self.d, self.sigma_color, self.sigma_space
+        if len(image_channels) != 3:
+            filtered_channels = []
+            for channel in image_channels:
+                filtered_channel = cv2.bilateralFilter(
+                    channel, self.d, self.sigma_color, self.sigma_space
+                )
+                filtered_channels.append(filtered_channel)
+            filtered_np_image = cv2.merge(filtered_channels)
+        else:
+            filtered_np_image = cv2.bilateralFilter(
+                uint8_numpy_image, self.d, self.sigma_color, self.sigma_space
             )
-            filtered_channels.append(filtered_channel)
-
-        # Merge the filtered channels back together
-        filtered_np_image = cv2.merge(filtered_channels)
         filtered_tensor = convert_np_uint8_to_tensor(filtered_np_image)
 
         return filtered_tensor

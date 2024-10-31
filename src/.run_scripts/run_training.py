@@ -5,7 +5,9 @@ from models import ModelFactory
 
 # models: resnet,efficientnet,convnext,regnet,densenet,resnext,mobilenet,xception,inception,regnety,vit,deit,swin,cait,pvt,pit,beit,convmixer,mvit
 models = list(ModelFactory().all_models.keys())
-datasets = ['bigearthnet']
+datasets = ['rgb_bigearthnet' 'bigearthnet', 'caltech', 'caltech_120', 'deepglobe']
+pretrained = False
+
 
 # take first argument as dataset
 try:
@@ -25,6 +27,16 @@ try:
 except IndexError:
     print("No input models")
 
+try:
+    pretrained_str = os.sys.argv[3]
+    if pretrained_str == 'Pretrained':
+        pretrained = True
+    else:
+        pretrained = False
+except IndexError:
+    print("No input pretrained")
+
+
 
 
 run_manager = RunManager(
@@ -32,7 +44,7 @@ run_manager = RunManager(
     datasets=datasets,
     continue_on_error=True,
     train=True,
-    pretrained=False,
+    pretrained=pretrained,
     test_run=False,
     verbose=False,
 )

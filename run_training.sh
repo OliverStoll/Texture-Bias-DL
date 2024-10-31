@@ -1,18 +1,23 @@
 DATASET=$1
 MODELS=$2
+PRETRAINED=$3
 
 # define GPU and CPU for srun
+RUNNER_SCRIPT_PATH="./src/.run_scripts/run.sh"
+PYTHON_SCRIPT_NAME="run_training.py"
+OUTPUT_LOG="logs/slurm/$DATASET.out"
 GPU=1
 CPU=8
 hours=99
-# zero pad the hours if less than 2 digits
-if [ ${#hours} -eq 1 ]; then
+
+if [ ${#hours} -eq 1 ]; then  # zero pad the hours if less than 2 digits
     hours=0$hours
 fi
 
-
 TIMESTAMP="$hours:00:00"
-echo "TRAINING ($TIMESTAMP) with $GPU GPUs and $CPU CPUs with [ $DATASET | $MODELS ]"
+echo "TRAINING ($TIMESTAMP) with $GPU GPUs and $CPU CPUs with [ $DATASET | $MODELS | $PRETRAINED ]"
+
+OUTPUT_LOG="logs/slurm/$DATASET.out"
 
 # run the run.sh script
-sbatch --gpus=$GPU --cpus-per-task=$CPU --time=$TIMESTAMP --job-name=$DATASET -o logs/slurm/$DATASET.out --wrap="./src/.run_scripts/run.sh run_training.py $DATASET $MODELS"
+sbatch --gpus=$GPU --cpus-per-task=$CPU --time=$TIMESTAMP --job-name=$DATASET -o $OUTPUT_LOG --wrap="$RUNNER_SCRIPT_PATH $PYTHON_SCRIPT_NAME $DATASET $MODELS $PRETRAINED"

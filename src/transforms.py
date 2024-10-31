@@ -1,3 +1,5 @@
+from idlelib.pyparse import trans
+
 from common_utils.logger import create_logger
 import albumentations as A
 
@@ -12,7 +14,7 @@ from eval_transforms.channel_inversion import ChannelInversionTransform
 from eval_transforms.greyscale import GrayScaleTransform
 from eval_transforms.color_jitter import ColorJitterTransform
 from eval_transforms.patch_rotation import PatchRotationTransform
-from sanity_checks.check_transforms import test_transform
+from sanity_checks.check_transforms import test_transform, get_example_tensor
 from datasets import DataLoaderFactory
 
 
@@ -128,16 +130,26 @@ class TransformFactory:
         return all_transforms
 
 
-if __name__ == '__main__':
-    for transform in TransformFactory().get_all_default_transforms():
-        for dataset in DataLoaderFactory().dataset_names:
+def test_all_transforms(transform_name=None, datasets=None, example_idx=0):
+    if transform_name is None:
+        transforms = TransformFactory().get_all_default_transforms()
+    else:
+        transforms = TransformFactory().get_transforms(transform_name)
+    datasets = DataLoaderFactory().dataset_names if datasets is None else datasets
+    for transform in transforms:
+        for dataset in datasets:
             test_transform(
                 transform=transform['transform'],
                 transform_name=transform['type'],
                 param=transform['param'],
                 dataset=dataset,
+                example_idx=example_idx,
             )
-            try:
-                pass
-            except Exception as e:
-                print(f"Error in transform {transform['type']} on dataset {dataset}.")
+
+
+if __name__ == '__main__':
+    test_all_transforms(
+        example_idx=3,
+        transform_name='channel_inversion',
+        datasets=['caltech'],
+    )

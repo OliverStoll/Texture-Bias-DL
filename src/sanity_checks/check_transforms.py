@@ -10,6 +10,7 @@ from common_utils.config import CONFIG
 to_tensor = ToTensor()
 to_image = ToPILImage()
 
+BEN_RGB_CHANNELS = (3, 2, 1)
 ben_mean = {
     "B01": 361.0660705566406,
     "B02": 438.385009765625,
@@ -38,22 +39,30 @@ ben_std = {
     "B12": 813.5411376953125,
     "B8A": 1356.568359375,
 }
-ben_mean_list = [ben_mean[key] for key in sorted(ben_mean.keys())]
-ben_std_list = [ben_std[key] for key in sorted(ben_std.keys())]
-BEN_CHANNELS = (3, 2, 1)
+UINT16_MAX = 65535
+ben_means = [ben_mean[key] for key in sorted(ben_mean.keys())]
+ben_stds = [ben_std[key] for key in sorted(ben_std.keys())]
+ben_means_for_img = [mean / UINT16_MAX for mean in ben_means]
+ben_stds_for_img = [std / UINT16_MAX for std in ben_stds]
+rgb_ben_means_for_img = [ben_means_for_img[i] for i in BEN_RGB_CHANNELS]
+rgb_ben_stds_for_img = [ben_stds_for_img[i] for i in BEN_RGB_CHANNELS]
 
-# TODO: add mean & std for caltech & deepglobe
-MEANS = {
-    'bigearthnet': ben_mean_list,
+
+MEANS_TO_ZERO_ONE = {
+    'bigearthnet': ben_means_for_img,
+    'rgb_bigearthnet': rgb_ben_means_for_img,
     'imagenet': [0.485, 0.456, 0.406],
-    'caltech': [],
-    'deepglobe': []
+    'caltech': [0.485, 0.456, 0.406],
+    'caltech_120': [0.485, 0.456, 0.406],
+    'deepglobe': [0.4095, 0.3808, 0.2836],
 }
-STDS = {
-    'bigearthnet': ben_std_list,
+STDS_TO_ZERO_ONE = {
+    'bigearthnet': ben_means_for_img,
+    'rgb_bigearthnet': rgb_ben_stds_for_img,
     'imagenet': [0.229, 0.224, 0.225],
-    'caltech': [],
-    'deepglobe': []
+    'caltech': [0.229, 0.224, 0.225],
+    'caltech_120': [0.229, 0.224, 0.225],
+    'deepglobe': [0.1509, 0.1187, 0.1081],
 }
 
 
@@ -62,55 +71,90 @@ def get_example_image():
     return img
 
 
-def get_example_tensor(dataset):
-    tensor_path = f"{CONFIG['example_tensors_path']}/{dataset}.pt"
+def get_example_tensor(dataset, example_idx=0):
+    tensor_path = f"{CONFIG['example_tensors_path']}/{dataset}_{example_idx}.pt"
     tensor = torch.load(tensor_path)
     return tensor
 
 
-def denormalize_tensor(tensor, dataset):
-    mean = MEANS[dataset]
-    std = STDS[dataset]
-    for tensor_channel, mean, std in zip(tensor, mean, std):
-        tensor_channel.mul_(std).add_(mean)
-    return tensor
+def _clamp_99_percentile(tensor_channel):
+    """ Clamp the 99 percentile of the tensor to 1.0 """
+    min_val = torch.quantile(tensor_channel, 0.01)
+    max_val = torch.quantile(tensor_channel, 0.99)
+    tensor_channel[tensor_channel < min_val] = min_val
+    tensor_channel[tensor_channel > max_val] = max_val
+    # rescale to 0-1
+    tensor_channel = (tensor_channel - min_val) / (max_val - min_val)
+    return tensor_channel
 
 
-def show_original_example_image(datasets=('bigearthnet', 'imagenet')):
-    for dataset in datasets:
-        test_tensor = get_example_tensor(dataset=dataset)
-        test_tensor_un = denormalize_tensor(test_tensor, dataset)
-        if dataset == 'bigearthnet':
-            test_tensor_un = test_tensor_un[BEN_CHANNELS, :, :]
-        test_image = to_image(test_tensor_un)
-        test_image.save(f"{CONFIG['example_image_output']}/{dataset}_original.png")
+def denormalize_tensor_to_ZERO_ONE(tensor, dataset):
+    means = MEANS_TO_ZERO_ONE[dataset]
+    stds = STDS_TO_ZERO_ONE[dataset]
+    new_channels = []
+    for tensor_channel, mean, std in zip(tensor, means, stds):
+        new_channel = tensor_channel * std + mean
+        if 'bigearthnet' in dataset:
+            new_channel = _clamp_99_percentile(new_channel)
+        new_channels.append(new_channel)
+        new_channel[new_channel < 0] = 0
+    new_tensor = torch.stack(new_channels)
+    return new_tensor
 
 
-def test_transform(transform, transform_name, param, dataset):
+def test_tensor_is_normalized(tensor, max_absolute_value=20):
+    """ Check if any value is greater than +-20"""
+    return torch.all(torch.abs(tensor) < max_absolute_value)
+
+
+def test_transform(transform, transform_name, param, dataset, example_idx=0):
     save_path = f"{CONFIG['example_image_output']}/{transform_name}"
     os.makedirs(save_path, exist_ok=True)
-    image_tensor = get_example_tensor(dataset)
-    transformed_tensor = transform(image_tensor)
-    transformed_tensor = denormalize_tensor(transformed_tensor, dataset)
+    original_tensor = get_example_tensor(dataset, example_idx=example_idx)
+    transformed_tensor = original_tensor.clone()
+    assert test_tensor_is_normalized(original_tensor), "Original tensor is not normalized."
+    transformed_tensor = transform(transformed_tensor)
     if dataset == 'bigearthnet':
-        transformed_tensor = transformed_tensor[BEN_CHANNELS, :, :]
-    # switch channels inside first dimension from bgr to rgb
-    correct_tuple = (0, 1, 2) # gelb-grün
-    correct_tuple = (2, 1, 0) # türkis
-    correct_tuple = (2, 0, 1) # blau
-    correct_tuple = (1, 2, 0) # lila
-    correct_tuple = (1, 0, 2) # gelb-braun
-    correct_tuple = (0, 2, 1) # lila-weiß?
-    correct_tuple = (1, 2, 0)  # lila
-    transformed_tensor = transformed_tensor[correct_tuple, :, :]
+        transformed_tensor = transformed_tensor[BEN_RGB_CHANNELS, :, :]
+        original_tensor = original_tensor[BEN_RGB_CHANNELS, :, :]
+
+    transformed_tensor = denormalize_tensor_to_ZERO_ONE(transformed_tensor, dataset)
+    original_tensor = denormalize_tensor_to_ZERO_ONE(original_tensor, dataset)
+    if torch.any(transformed_tensor < 0) or torch.any(transformed_tensor > 1):
+        print(f"Tensor values are not in [0, 1].")
+        print(f"Min: {torch.min(transformed_tensor)}, Max: {torch.max(transformed_tensor)}")
+
+
     transformed_image = to_image(transformed_tensor)
     example_img_path = f"{save_path}/{dataset}_{param}.png"
-    print(f"saving image to {example_img_path}")
     transformed_image.save(example_img_path)
 
+    original_image = to_image(original_tensor)
+    if param == 0 and not torch.allclose(original_tensor, transformed_tensor, atol=1e-5):
+        original_img_path = f"{save_path}/{dataset}_original.png"
+        original_image.save(original_img_path)
+        print(f"Transform {transform_name} changed image although param = 0.")
+
+
+def show_original():
+    save_path = f"{CONFIG['example_image_output']}/original"
+    os.makedirs(save_path, exist_ok=True)
+    base_tensor = get_example_tensor('bigearthnet', example_idx=1)
+    # get all pair combinations for indexes between 0 and 11:
+    possible_channels = [1, 2, 3, 4]
+    for i in possible_channels:
+        for j in possible_channels:
+            for k in possible_channels:
+                if i == j or i == k or j == k:
+                    continue
+                original_tensor = base_tensor.clone()
+                channel_triplet = (i, j, k)
+                original_tensor = original_tensor[channel_triplet, :, :]
+                original_tensor = denormalize_tensor_to_ZERO_ONE(original_tensor, 'bigearthnet')
+                original_image = to_image(original_tensor)
+                original_img_path = f"{save_path}/bigearthnet_{i}_{j}_{k}.png"
+                original_image.save(original_img_path)
 
 
 if __name__ == '__main__':
-    show_original_example_image()
-
-
+    show_original()

@@ -32,10 +32,11 @@ class ChannelInversionTransform(object):
 
         # Get the indices of channels to shuffle
         channel_indices = list(range(channels))
-        channels_to_invert = random.sample(channel_indices, num_channels_to_invert)
+        channel_indices_to_invert = random.sample(channel_indices, num_channels_to_invert)
 
         # invert by multiplying by -1
-        img[channels_to_invert] = -1 * img[channels_to_invert]
+        for channel_idx_to_invert in channel_indices_to_invert:
+            img[channel_idx_to_invert] = -1 * img[channel_idx_to_invert]
 
         return img
 
