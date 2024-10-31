@@ -23,7 +23,8 @@ try:
         model_start_index = int(models_str)
         models = models[model_start_index:]
     except:
-        models = models_str.split(',')
+        if models_str != 'all':
+            models = models_str.split(',')
 except IndexError:
     print("No input models")
 
