@@ -55,6 +55,7 @@ class TrainingModule(LightningModule):
         'deepglobe': [label for label in DEEPGLOBE_LABELS.values()],
         'caltech': [label for label in CALTECH_CLASSNAMES_20],
         'caltech_120': [label for label in CALTECH_CLASSNAMES_20],
+        'caltech_ft': [label for label in CALTECH_CLASSNAMES_20],
         'imagenet': range(1000)
     }
 
