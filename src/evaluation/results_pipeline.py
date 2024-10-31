@@ -77,6 +77,8 @@ class ResultsExtractor:
 
         run_results_df = pd.DataFrame(all_run_results)
         run_results_df = run_results_df.drop_duplicates()
+        # sort by timestamp column
+        run_results_df = run_results_df.sort_values(by='timestamp')
         if save_results:
             run_results_df.to_csv(self.results_df_path, index=False)
         return run_results_df

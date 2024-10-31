@@ -22,6 +22,7 @@ class DataLoaderFactory:
     data_modules = {
         'imagenet': ImageNetDataModule,
         'caltech': CaltechDataModule,
+        'caltech_ft': CaltechDataModule,
         'caltech_120': CaltechDataModule,
         'bigearthnet': BENv2DataModule,
         'rgb_bigearthnet': BENv2DataModule,
