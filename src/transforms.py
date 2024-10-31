@@ -1,5 +1,3 @@
-from idlelib.pyparse import trans
-
 from common_utils.logger import create_logger
 import albumentations as A
 
