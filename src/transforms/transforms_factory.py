@@ -21,63 +21,63 @@ empty_transforms = [{
 
 class TransformFactory:
     log = create_logger("TransformFactory")
+    transform_combinations = [
+        ('bilateral', 'patch_shuffle'),
+    ]
 
     def __init__(self):
         self.transforms = {
             'bilateral': {
+                'transform_type': 'texture',
                 'class': BilateralFilterTransform,
                 'param_name': 'd',
                 'param_values': [0, 3, 5, 9, 15, 31],
                 'param_values_minimal': [5, 23],
             },
             'median': {
+                'transform_type': 'texture',
                 'class': MedianFilterTransform,
                 'param_name': 'kernel_size',
                 'param_values': [0, 3, 5, 9, 15, 31],
                 'param_values_minimal': [3, 5],
             },
             'gaussian': {
+                'transform_type': 'texture',
                 'class': GaussianBlurTransform,
                 'param_name': 'sigma',
                 'param_values': [0., 1., 3., 5., 9., 15.],
                 'param_values_minimal': [1., 5.],
             },
-            # 'sobel': {
-            #     'class': SobelFilterTransform,
-            #     'param_name': 'kernel_size',
-            #     'param_values': [0, 3],  # TODO: implement more kernel sizes
-            #     'param_values_minimal': [0, 3],
-            # },
-            # 'canny': {
-            #     'class': CannyFilterTransform,
-            #     'param_name': 'thresholds',
-            #     'param_values_minimal': [(50, 150), (100, 200), (150, 250)],
-            # },
             'patch_shuffle': {
+                'transform_type': 'shape',
                 'class': PatchShuffleTransform,
                 'param_name': 'grid_size',
                 'param_values': [0, 2, 4, 6, 8, 11, 15],
                 'param_values_minimal': [1, 4, 8, 15],
             },
             'patch_rotation': {
+                'transform_type': 'shape',
                 'class': PatchRotationTransform,
                 'param_name': 'grid_size',
                 'param_values': [0, 2, 4, 6, 8, 11, 15],
                 'param_values_minimal': [1, 4, 8, 15],
             },
             'channel_shuffle': {
+                'transform_type': 'color',
                 'class': ChannelShuffleTransform,
                 'param_name': 'n',
                 'param_values': [0, 2, 3, 6, 12],
                 'param_values_minimal': [0, 2, 12],
             },
             'channel_inversion': {
+                'transform_type': 'color',
                 'class': ChannelInversionTransform,
                 'param_name': 'n',
                 'param_values': [0, 1, 2, 3, 6, 12],
                 'param_values_minimal': [0, 1, 2, 12]
             },
             'greyscale': {
+                'transform_type': 'color',
                 'class': GrayScaleTransform,
                 'param_name': 'enabled',
                 'param_values': [0, 1],
@@ -136,6 +136,10 @@ class TransformFactory:
         for i, transform_name_i in enumerate(self.transforms.keys()):
             for j, transform_name_j in enumerate(self.transforms.keys()):
                 if i >= j:
+                    continue
+                transform_type_i = self.transforms[transform_name_i]['transform_type']
+                transform_type_j = self.transforms[transform_name_j]['transform_type']
+                if transform_type_i == transform_type_j:
                     continue
                 transforms_list_i = all_transforms_sorted[transform_name_i]
                 transforms_list_j = all_transforms_sorted[transform_name_j]
