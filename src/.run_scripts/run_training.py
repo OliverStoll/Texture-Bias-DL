@@ -1,5 +1,5 @@
 import os
-from runs import RunManager
+from run_single import RunManager
 from models import ModelFactory
 
 
@@ -49,4 +49,4 @@ run_manager = RunManager(
     test_run=False,
     verbose=False,
 )
-run_manager.execute_runs()
+run_manager.execute_multiple_runs()

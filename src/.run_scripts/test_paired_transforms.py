@@ -7,7 +7,7 @@ from data_loading.datasets import DataLoaderFactory
 
 run_datasets = DataLoaderFactory().dataset_names
 run_models = ModelFactory().all_model_names
-val_transforms = TransformFactory().get_all_default_transforms()
+val_transforms = TransformFactory().get_pair_combinations_of_default_transforms()
 
 
 # take first argument as dataset

@@ -1,5 +1,5 @@
-from runs import RunManager
-from transforms import TransformFactory
+from run_single import RunManager
+from transforms.transforms_factory import TransformFactory
 from models import ModelFactory
 
 
@@ -13,7 +13,7 @@ if __name__ == '__main__':
     run_models = ['resnet']
     # run_models = ['resnet', 'vit', 'efficientnet', 'swin']
 
-    val_transforms = TransformFactory().get_transforms(
+    val_transforms = TransformFactory().get_multiple_transforms(
         transform_name='bilateral',
         param_name='d',
         param_values=diameters,
@@ -27,4 +27,4 @@ if __name__ == '__main__':
         test_run=False,
         device=3,
     )
-    run_manager.execute_runs()
+    run_manager.execute_multiple_runs()

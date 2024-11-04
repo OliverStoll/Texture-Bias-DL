@@ -1,10 +1,11 @@
 import torch
 import os
-import torchvision.transforms as transforms
 from torchvision.transforms import ToTensor, ToPILImage
 from PIL import Image
-
 from common_utils.config import CONFIG
+
+# from data_loading.datasets import DataLoaderFactory
+# from transforms.transforms_factory import TransformFactory
 
 
 to_tensor = ToTensor()
@@ -156,5 +157,26 @@ def show_original():
                 original_image.save(original_img_path)
 
 
+def test_all_transforms(transform_factory, dataloader_factory, transform_name=None, datasets=None, example_idx=0):
+    if transform_name is None:
+        transforms = transform_factory().get_all_default_transforms()
+    else:
+        transforms = transform_factory().get_multiple_transforms(transform_name)
+    datasets = dataloader_factory().dataset_names if datasets is None else datasets
+    for transform in transforms:
+        for dataset in datasets:
+            test_transform(
+                transform=transform['transform'],
+                transform_name=transform['type'],
+                param=transform['param'],
+                dataset=dataset,
+                example_idx=example_idx,
+            )
+
+
 if __name__ == '__main__':
-    show_original()
+    test_all_transforms(
+        example_idx=3,
+        transform_name='channel_inversion',
+        datasets=['caltech'],
+    )

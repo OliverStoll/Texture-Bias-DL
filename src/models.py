@@ -44,7 +44,7 @@ class ModelFactory:
         img_size_models.remove(no_img_size_transformer)
 
 
-    def get_in_out_channels(self, data_conf):
+    def _get_in_out_channels(self, data_conf):
         in_channels = data_conf['input_channels']
         in_channels = in_channels if in_channels != self.default_in_channels else None
         if data_conf['task'] == 'multiclass':
@@ -60,7 +60,7 @@ class ModelFactory:
         if isinstance(dataset_config, str):
             dataset_config = CONFIG['datasets'][dataset_config]
         full_model_name = self.all_models[model_name]
-        in_channels, out_features = self.get_in_out_channels(dataset_config)
+        in_channels, out_features = self._get_in_out_channels(dataset_config)
         img_size = dataset_config['image_size'] if model_name in self.img_size_models else None
         self.log.debug(f"Initializing model: [{model_name}{' | Pretrained' if pretrained else ''}] ")
         model = timm.create_model(

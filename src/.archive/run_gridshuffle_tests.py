@@ -1,5 +1,5 @@
-from runs import RunManager
-from transforms import TransformFactory
+from run_single import RunManager
+from transforms.transforms_factory import TransformFactory
 
 
 if __name__ == '__main__':
@@ -8,7 +8,7 @@ if __name__ == '__main__':
     grid_sizes = range(1, 21)
     grid_sizes = [2]
 
-    grid_shuffle_transforms = TransformFactory().get_transforms(
+    grid_shuffle_transforms = TransformFactory().get_multiple_transforms(
         transform_name='grid_shuffle',
         param_name='grid_size',
         param_values=grid_sizes,
@@ -22,4 +22,4 @@ if __name__ == '__main__':
         train=False,
         test_run=True,
     )
-    run_manager.execute_runs()
+    run_manager.execute_multiple_runs()

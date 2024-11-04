@@ -1,12 +1,10 @@
-import torch
-import torch.nn as nn
 from lightly.models import MoCo
 from lightly.loss import NTXentLoss
 import torch.optim as optim
 import pytorch_lightning as pl
 from torchvision.models import resnet50
 
-from datasets import DataLoaderFactory
+from data_loading.datasets import DataLoaderFactory
 
 
 class MoCoModel(pl.LightningModule):

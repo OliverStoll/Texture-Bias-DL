@@ -1,4 +1,4 @@
-from runs import RunManager
+from run_single import RunManager
 
 
 if __name__ == '__main__':
@@ -15,6 +15,6 @@ if __name__ == '__main__':
         train=False,
         test_run=False,
     )
-    run_manager.execute_runs()
+    run_manager.execute_multiple_runs()
     # TODO: find why the low-pass filter is crippling mAP even with high cutoffs
     # TODO: run when BEN is fully trained

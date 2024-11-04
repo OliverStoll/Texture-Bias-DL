@@ -17,7 +17,7 @@ source "$VENV_PATH/bin/activate"
 # Print all pip packages installed as one string
 echo "PIP PACKAGES INSTALLED"
 all_packages=$(pip freeze)
-echo $all_packages
+echo "$all_packages"
 
 # RUN TRAINING WITH SRUN
 python /home/olivers/master-thesis/src/.run_scripts/$SCRIPT_NAME $DATASET $MODELS $PRETRAINED

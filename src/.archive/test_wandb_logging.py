@@ -1,7 +1,7 @@
-from runs import Run
+from run_single import SingleRun
 
 
-run = Run(
+run = SingleRun(
     dataset_name='bigearthnet',
     model_name='resnet',
     devices=[2],

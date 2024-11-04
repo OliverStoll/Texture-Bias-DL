@@ -4,7 +4,7 @@ from common_utils.config import CONFIG
 from common_utils.logger import create_logger
 
 # commented out for weird circular import error on windows
-# from transforms import TransformFactory
+# from transforms.transforms_factoryimport TransformFactory
 # from datasets import DataLoaderFactory
 
 # from evaluation.results_pipeline import ResultsExtractor

@@ -6,7 +6,7 @@ import os
 import wandb
 from pytorch_lightning.loggers import WandbLogger
 
-from datasets import DataLoaderFactory
+from data_loading.datasets import DataLoaderFactory
 from ssl_models.mae import MAE
 
 

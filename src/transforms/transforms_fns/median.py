@@ -2,7 +2,7 @@ import torch
 import albumentations as A
 
 from sanity_checks.check_transforms import test_transform
-from util_code.image_normalization import convert_tensor_to_np_uint8, convert_np_uint8_to_tensor
+from transforms.transforms_fns._image_normalization import convert_tensor_to_np_uint8, convert_np_uint8_to_tensor
 
 
 class MedianFilterTransform:

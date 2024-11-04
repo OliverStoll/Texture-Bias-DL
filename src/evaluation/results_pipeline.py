@@ -1,15 +1,10 @@
 import os
 import pandas as pd
 import json
-import matplotlib.pyplot as plt
-import numpy as np
-import random
-from common_utils.config import ROOT_DIR, CONFIG
+from common_utils.config import CONFIG
 from common_utils.logger import create_logger
 
 from models import ModelFactory
-from transforms import TransformFactory
-from datasets import DataLoaderFactory
 
 
 class ResultsExtractor:
