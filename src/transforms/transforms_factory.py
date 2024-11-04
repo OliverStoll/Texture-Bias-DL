@@ -116,7 +116,7 @@ class TransformFactory:
             all_transforms.extend(transforms)
         return all_transforms
 
-    def _combine_pair_of_transforms(self, transform_i, transform_j, delimiter='#'):
+    def _combine_pair_of_transforms(self, transform_i, transform_j, delimiter='~'):
         """ Combine two transforms into a single dictionary. """
         combined_transform = {
             'type': f"{transform_i['type']}{delimiter}{transform_j['type']}",
