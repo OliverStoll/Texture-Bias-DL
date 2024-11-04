@@ -152,7 +152,6 @@ class TransformFactory:
                         transforms_list_j[param_j]
                     )
                     transform_pair_combinations.append(combined_pair)
-        print()
         return transform_pair_combinations
 
 
