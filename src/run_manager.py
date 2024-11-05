@@ -46,7 +46,7 @@ class RunManager:
         self.pretrained = pretrained
         # self.device = self.determine_gpu() if device is None else [device]
         self.device = None
-        self.random_ids = [randint(0, 999999) for _ in range(1000)]
+        self.random_ids = [randint(0, 999999) for _ in range(100000)]
         utilization = print_gpu_info()
         if int(utilization) > 0:
             self.log.warning(f"GPU {self.device} is already in use")
