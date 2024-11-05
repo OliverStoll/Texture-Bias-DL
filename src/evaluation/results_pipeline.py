@@ -14,14 +14,16 @@ class ResultsExtractor:
     results_df_path = f"{output_dir}/results.csv"
     internal_log_path = 'files/wandb-summary.json'
     transformer_models = ModelFactory().transformer_model_names
+    metric_data_split = 'test'
     metrics = {
-        'bigearthnet': 'test_mAP_macro',
-        'rgb_bigearthnet': 'test_mAP_macro',
-        'deepglobe': 'test_mAP_macro',
-        'imagenet': 'test_accuracy_macro',
-        'caltech': 'test_accuracy_macro',
-        'caltech_120': 'test_accuracy_macro'
+        'bigearthnet': 'mAP',
+        'rgb_bigearthnet': 'mAP',
+        'deepglobe': 'mAP',
+        'imagenet': 'accuracy',
+        'caltech': 'accuracy',
+        'caltech_120': 'accuracy'
     }
+
 
     def get_model_type(self, model_name):
         return 'transformer' if model_name in self.transformer_models else 'cnn'
@@ -31,13 +33,15 @@ class ResultsExtractor:
             return None
         run_timestamp, run_details_str = run_dir_name.split('--')
         run_name_details = run_details_str.split('-')
+        metric_name = f"{self.metric_data_split}_{self.metrics[run_name_details[0]]}"
         run_results = {
             'timestamp': run_timestamp.replace('run-', ''),
             'dataset': run_name_details[0],
             'model': run_name_details[1],
             'model_type': self.get_model_type(run_name_details[1]),
             'run_type': run_name_details[2],
-            'metric': self.metrics[run_name_details[0]],
+            'metric_micro': f"{metric_name}_micro",
+            'metric_macro': f"{metric_name}_macro",
             'transform': run_name_details[3] if run_name_details[2] != 'ST' else None,
             'transform_param': run_name_details[4] if run_name_details[2] != 'ST' else None,
         }
@@ -63,7 +67,8 @@ class ResultsExtractor:
                 run_results = self._get_run_details(run_dir_name)
                 with open(log_file_path, 'r') as file:
                     log_data = json.load(file)
-                    run_results['score'] = log_data.get(run_results['metric'], None)
+                    run_results['score_micro'] = log_data.get(run_results['metric_micro'], None)
+                    run_results['score_macro'] = log_data.get(run_results['metric_macro'], None)
                 all_run_results.append(run_results)
             except Exception as e:
                 error_runs.append(run_dir_name)
