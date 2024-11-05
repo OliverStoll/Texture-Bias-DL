@@ -143,8 +143,6 @@ class BENv2DataModule(pl.LightningDataModule):
 
         # get mean and std
         ben_mean, ben_std = band_combi_to_mean_std(self.img_size[0])
-        print("ben_mean", ben_mean)
-        print("ben_std", ben_std)
         _default_train_transform = default_train_transform(
             img_size=(self.img_size[1], self.img_size[2]), mean=ben_mean, std=ben_std
         )

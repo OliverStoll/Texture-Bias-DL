@@ -10,7 +10,7 @@ ALL_DATASETS=("imagenet" "bigearthnet" "rgb_bigearthnet" "caltech" "deepglobe" "
 
 for DATASET in "${ALL_DATASETS[@]}"
 do
-  echo "Queuing sbatch job for $DATASET"
-  # run the run.sh script
-  sbatch --gpus=$GPU --cpus-per-task=$CPU --job-name=$DATASET -o logs/slurm/$DATASET.out --wrap="./src/.run_scripts/run.sh test_paired_transforms.py $DATASET"
+  echo "$DATASET: "
+  # run the run.sh script and get a return value
+  retval=$(sbatch --gpus=$GPU --cpus-per-task=$CPU --job-name=$DATASET -o logs/slurm/$DATASET.out --wrap="./src/.run_scripts/run.sh test_paired_transforms.py $DATASET")
 done
