@@ -38,18 +38,11 @@ class ResultsExtractor:
             'model': run_name_details[1],
             'model_type': self.get_model_type(run_name_details[1]),
             'run_type': run_name_details[2],
-            'metric_micro': f"{metric_name}_micro",
-            'metric_macro': f"{metric_name}_macro",
+            'metric': f"{metric_name}",
             'transform': run_name_details[3] if run_name_details[2] != 'ST' else None,
             'transform_param': run_name_details[4] if run_name_details[2] != 'ST' else None,
         }
-        try:
-            run_results['transform_param'] = int(run_results['transform_param'])
-        except:
-            try:
-                run_results['transform_param'] = float(run_results['transform_param'])
-            except:
-                pass
+
         return run_results
 
     def get_results(self, save_results=False):
@@ -65,8 +58,8 @@ class ResultsExtractor:
                 run_results = self._get_run_details(run_dir_name)
                 with open(log_file_path, 'r') as file:
                     log_data = json.load(file)
-                    run_results['score_micro'] = log_data.get(run_results['metric_micro'], None)
-                    run_results['score_macro'] = log_data.get(run_results['metric_macro'], None)
+                    run_results['score_micro'] = log_data.get(run_results['metric']+'_micro', None)
+                    run_results['score_macro'] = log_data.get(run_results['metric']+'_macro', None)
                 all_run_results.append(run_results)
             except Exception as e:
                 error_runs.append(run_dir_name)
@@ -78,6 +71,7 @@ class ResultsExtractor:
         # sort by timestamp column
         run_results_df = run_results_df.sort_values(by='timestamp')
         if save_results:
+            self.log.debug(f"Saving results to {self.results_df_path}")
             run_results_df.to_csv(self.results_df_path, index=False)
         return run_results_df
 

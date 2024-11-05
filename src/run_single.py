@@ -15,7 +15,7 @@ wandb.require("core")
 
 class SingleRun:
     """ Run class to execute a training run on a specific model and dataset """
-    logs_path = '/media/storagecube/olivers/logs/logs'  # f'{ROOT_DIR}/logs'
+    logs_path = '/media/storagecube/olivers/logs/logs'
     checkpoint_path = '/media/storagecube/olivers/logs/checkpoints'
     dl_collection = DataLoaderFactory()
     model_collection = ModelFactory()
