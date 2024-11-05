@@ -4,8 +4,6 @@ import json
 from common_utils.config import CONFIG
 from common_utils.logger import create_logger
 
-from models import ModelFactory
-
 
 class ResultsExtractor:
     log = create_logger("Transform Evaluation")
@@ -13,7 +11,7 @@ class ResultsExtractor:
     output_dir = f"{CONFIG['output_dir']}/transform_results"
     results_df_path = f"{output_dir}/results.csv"
     internal_log_path = 'files/wandb-summary.json'
-    transformer_models = ModelFactory().transformer_model_names
+    transformer_models = ['vit', 'deit', 'swin', 'cait', 'pvt', 'pit', 'beit', 'convmixer', 'mvit']
     metric_data_split = 'test'
     metrics = {
         'bigearthnet': 'mAP',
