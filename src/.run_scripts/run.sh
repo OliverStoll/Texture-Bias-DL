@@ -9,6 +9,12 @@ PRETRAINED=$4
 VENV_PATH="/home/olivers/master-thesis/venv"
 INCLUDE_PATH="/home/olivers/master-thesis/src"
 
+# if 'test' in script_name, set env-var DISABLE_ARTIFACTS to disable saving artifacts and echo this
+if [[ $SCRIPT_NAME == *"test"* ]]; then
+    export DISABLE_ARTIFACTS=1
+    echo "DISABLED ARTIFACTS"
+fi
+
 export PYTHONPATH=$PYTHONPATH:$INCLUDE_PATH
 
 # Activate the virtual environment

@@ -1,3 +1,5 @@
+import os
+
 import torch.nn as nn
 import torch
 import wandb
@@ -175,6 +177,8 @@ class TrainingModule(LightningModule):
         return caption
 
     def log_image(self, batch, stage, idx=0):
+        if os.environ.get('DISABLE_ARTIFACTS', False):
+            return
         images, labels = batch
         image = images[idx]
         caption = self._get_log_image_caption(image, labels, idx)
