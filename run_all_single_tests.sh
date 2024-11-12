@@ -4,6 +4,8 @@ MODELS=$1
 GPU=1
 CPU=8
 
+ALL_DATASETS=("imagenet" "bigearthnet" "rgb_bigearthnet" "caltech" "deepglobe" "caltech_120" "caltech_ft")
+
 for DATASET in "${ALL_DATASETS[@]}"
 do
   echo "$DATASET: "
