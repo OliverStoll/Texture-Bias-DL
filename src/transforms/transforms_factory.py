@@ -156,14 +156,33 @@ class TransformFactory:
 
 
 
+
 if __name__ == '__main__':
-    from sanity_checks.check_transforms import test_all_transforms, test_transform
-    pairs = TransformFactory().get_pair_combinations_of_default_transforms()#
-    dataset_name = 'imagenet'
-    for single_pair in pairs:
-        transform_obj = single_pair['transform']
-        transform_name = single_pair['type']
-        param_name = single_pair['param_name']
-        param = single_pair['param']
-        path_name = 'pair/' + transform_name
-        test_transform(transform_obj, path_name, param, dataset_name)
+    from sanity_checks.check_transforms import test_transform
+    img_idx = {
+        'imagenet': 1,
+        'deepglobe': 1,
+    }
+    dataset_names = ['imagenet', 'bigearthnet', 'caltech', 'deepglobe']
+    dataset_names = ['deepglobe']
+    for dataset_name in dataset_names:
+        print(f"Plotting Single {dataset_name}")
+        example_idx = img_idx.get(dataset_name, 0)
+        for single_transform in TransformFactory().get_all_default_transforms():
+            test_transform(
+                transform=single_transform['transform'],
+                transform_name='single/' + single_transform['type'],
+                param=single_transform['param'],
+                dataset=dataset_name,
+                example_idx=example_idx
+            )
+
+        print(f"Plotting Double {dataset_name}")
+        for single_pair in TransformFactory().get_pair_combinations_of_default_transforms():
+            test_transform(
+                transform=single_pair['transform'],
+                transform_name='double/' + single_pair['type'],
+                param=single_pair['param'],
+                dataset=dataset_name
+
+            )

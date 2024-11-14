@@ -116,5 +116,5 @@ if __name__ == '__main__':
         data_path='C:/CODE/master-thesis/data/results_v2.csv'
     )
     plotter_.plot_all(
-        score_types=['relative_loss']
+        # score_types=['relative_loss']
     )

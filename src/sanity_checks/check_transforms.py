@@ -109,7 +109,7 @@ def test_tensor_is_normalized(tensor, max_absolute_value=20):
 
 
 def test_transform(transform, transform_name, param, dataset, example_idx=0):
-    save_path = f"{CONFIG['example_image_output']}/{transform_name}"
+    save_path = f"{CONFIG['example_image_output']}/{dataset}/{transform_name}"
     os.makedirs(save_path, exist_ok=True)
     original_tensor = get_example_tensor(dataset, example_idx=example_idx)
     transformed_tensor = original_tensor.clone()
@@ -122,8 +122,11 @@ def test_transform(transform, transform_name, param, dataset, example_idx=0):
     transformed_tensor = denormalize_tensor_to_ZERO_ONE(transformed_tensor, dataset)
     original_tensor = denormalize_tensor_to_ZERO_ONE(original_tensor, dataset)
     if torch.any(transformed_tensor < 0) or torch.any(transformed_tensor > 1):
-        print(f"Tensor values are not in [0, 1].")
-        print(f"Min: {torch.min(transformed_tensor)}, Max: {torch.max(transformed_tensor)}")
+        # print(f"Tensor values are not in [0, 1].")
+        print(f"Tensor values are not in [0, 1] - "
+              f"Min: {torch.min(transformed_tensor):.2f}, Max: {torch.max(transformed_tensor):.2f}")
+        transformed_tensor[transformed_tensor < 0] = 0
+        transformed_tensor[transformed_tensor > 1] = 1
 
 
     transformed_image = to_image(transformed_tensor)

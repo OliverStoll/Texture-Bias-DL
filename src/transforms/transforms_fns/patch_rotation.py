@@ -41,7 +41,7 @@ class PatchRotationTransform:
 
         # Iterate over the patch positions and copy the corresponding patch from the original image
         for i, (patch_row, patch_col) in enumerate(grid_positions):
-            k = random.randint(0, 3)
+            k = random.randint(1, 3)
             start_row = patch_row * patch_height
             end_row = start_row + patch_height
             start_col = patch_col * patch_width
