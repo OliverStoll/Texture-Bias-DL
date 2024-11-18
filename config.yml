@@ -13,7 +13,7 @@ seed: 42
 dataloader_timeout: 600
 
 # paths
-output_dir: 'C:/CODE/master-thesis/output'
+output_dir: '/home/olivers/master-thesis/output'
 checkpoint_dir: '/media/storagecube/olivers/logs/checkpoints'
 example_image: '/media/storagecube/data/shared/datasets/ImageNet-2012/n01440764/n01440764_10026.JPEG'
 example_tensors_path: 'C:/CODE/master-thesis/data/example_tensors'
