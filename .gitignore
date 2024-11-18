@@ -1,4 +1,5 @@
 /checkpoints
 /output
+/output/*
 /results
 /results_v1

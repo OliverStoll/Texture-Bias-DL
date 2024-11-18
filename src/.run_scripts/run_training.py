@@ -1,5 +1,5 @@
 import os
-from run_single import RunManager
+from run_manager import RunManager
 from models import ModelFactory
 
 
@@ -33,7 +33,7 @@ try:
     if pretrained_str == 'Pretrained':
         pretrained = True
     else:
-        pretrained = False
+        pretrained = None
 except IndexError:
     print("No input pretrained")
 
