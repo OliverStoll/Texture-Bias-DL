@@ -57,7 +57,8 @@ class ResultsExtractor:
         all_run_dirs = os.listdir(self.all_runs_dir)
         self.log.info(f"Found {len(all_run_dirs)} runs in {self.all_runs_dir}")
         for idx, run_dir_name in enumerate(all_run_dirs):
-            print(idx)
+            if idx % 100 == 0:
+                print(idx)
             if 'caltech-120' in run_dir_name:
                 continue
             if not run_dir_name.startswith('run'):
