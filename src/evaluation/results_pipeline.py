@@ -19,8 +19,14 @@ class ResultsExtractor:
         'deepglobe': 'mAP',
         'imagenet': 'accuracy',
         'caltech': 'accuracy',
-        'caltech_120': 'accuracy'
+        'caltech_120': 'accuracy',
+        'caltech_ft': 'accuracy',
     }
+
+    def __init__(self):
+        os.makedirs(self.output_dir, exist_ok=True)
+        self.log.debug(f"Starting Results-Extraction. "
+                       f"Results will be saved to {self.results_df_path}")
 
 
     def get_model_type(self, model_name):
@@ -48,7 +54,10 @@ class ResultsExtractor:
     def get_results(self, save_results=False):
         error_runs = []
         all_run_results = []
-        for run_dir_name in os.listdir(self.all_runs_dir):
+        all_run_dirs = os.listdir(self.all_runs_dir)
+        self.log.info(f"Found {len(all_run_dirs)} runs in {self.all_runs_dir}")
+        for run_dir_name in all_run_dirs:
+            print('.', end='')
             if 'caltech-120' in run_dir_name:
                 continue
             if not run_dir_name.startswith('run'):

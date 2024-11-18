@@ -112,9 +112,9 @@ class ResultsPlotter:
         return data[~not_enough_channels_condition]
 
     def _filter_out_duplicates(self, data: pd.DataFrame) -> pd.DataFrame:
-        return data.loc[
-            data.groupby(['dataset', 'model', 'transform', 'transform_param'])['score'].idxmax()
-        ]
+        unique_idx = data.groupby(['dataset', 'model', 'transform', 'transform_param'])['timestamp'].idxmax()
+        unique_data = data.loc[unique_idx]
+        return unique_data
 
 
     def _prepare_data_for_plotting(
@@ -128,8 +128,8 @@ class ResultsPlotter:
         data = self._filter_experiment(data, filter_for_transforms)
         data = self._clean_unwanted_params(data, filter_out_params)
         data = self._clean_not_enough_channels(data)
-        data = self._calculate_other_score_types(data)
         data = self._filter_out_duplicates(data)
+        data = self._calculate_other_score_types(data)
 
         return data
 
@@ -182,11 +182,7 @@ class ResultsPlotter:
         for idx, transform_name in enumerate(transform_names):
             fig, ax = self._get_fig_ax(idx, num_plots)
             single_transform_results = results_data[results_data['transform'] == transform_name]
-            plotting_thread = Thread(
-                target=self.create_single_plot,
-                args=(ax, single_transform_results, transform_name.upper(), dataset_names, model_names),
-            )
-            plotting_thread.start()
+            self.create_single_plot(ax, single_transform_results, transform_name, dataset_names, model_names)
             if self.tight_layout:
                 fig.tight_layout(pad=2.0)
             if not self.plot_as_subplots:
@@ -424,11 +420,13 @@ class ResultsPlotter:
 
 
 if __name__ == '__main__':
-    plotter = ResultsPlotter(
-        data_path='C:/CODE/master-thesis/data/results_v2.csv',
-    )
-    plotter.create_all_plots(
-        transform_names=['channel_shuffle'],
-        dataset_names=['deepglobe'],
-        save_name="TEST"
-    )
+    for score_type in ['relative_loss', 'absolute_loss', 'score']:
+        plotter = ResultsPlotter(
+            score_type=score_type,
+            data_path='C:/CODE/master-thesis/data/results_v2.csv',
+        )
+        plotter.create_all_plots(
+            transform_names=['channel_shuffle'],
+            dataset_names=['deepglobe'],
+            save_name=f"TEST_{score_type}_deepglobe"
+        )
