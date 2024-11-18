@@ -8,7 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from common_utils.config import CONFIG
 
-from sanity_checks.check_dataloader import check_dataloader
+# from sanity_checks.check_dataloader import check_dataloader
 
 
 DEEPGLOBE_COLOR2CLASS = {
