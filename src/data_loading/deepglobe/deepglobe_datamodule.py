@@ -206,6 +206,7 @@ if __name__ == "__main__":
     dm.setup()
     train_dl, val_dl, test_dl = dm.all_dataloader()
     first_batch = next(iter(train_dl))
+    print(first_batch.shape)
     # print min max to see if normalization is working
     for idx in range(10):
         print(first_batch[idx].min(), first_batch[idx].max())
