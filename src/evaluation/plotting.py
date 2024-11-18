@@ -11,7 +11,7 @@ class ResultsPlotter:
     log = create_logger("Transform Plotter")
     output_dir = f"{CONFIG['output_dir']}/test"
     results_df_path = f"{output_dir}/results.csv"
-    data_path = 'C:/CODE/master-thesis/data/results.csv'
+    data_path = '/data/results_v1.csv'
     transform_categories = {
         'color': ['channel_shuffle', 'channel_inversion', 'greyscale'],
         'texture': ['bilateral', 'median', 'gaussian'],
@@ -173,7 +173,7 @@ class ResultsPlotter:
             model_names: list[str] | str | None = None,
             save_name: str | None = None,
     ):
-        self.log.info(f"Creating plots for [{transform_names} | {dataset_names} | {model_names}]")
+        self.log.debug(f"Creating plots for [{transform_names} | {dataset_names} | {model_names}]\n")
         transform_names, dataset_names, model_names = self._reformat_all_inputs_as_lists(
             transform_names, dataset_names, model_names
         )

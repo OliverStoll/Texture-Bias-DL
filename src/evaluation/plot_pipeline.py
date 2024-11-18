@@ -8,10 +8,11 @@ from src.evaluation.plotting import ResultsPlotter
 class PlotPipeline:
     log = create_logger("Plot Pipeline")
     output_path = 'C:/CODE/master-thesis/results'
-    score_types = ['score', 'relative_loss', 'absolute_loss']
+    score_types = ['relative_loss', 'score', 'absolute_loss']
 
-    def __init__(self, data_path: str | None = None):
+    def __init__(self, data_path: str | None = None, output_path: str | None = None):
         self.data_path = data_path
+        self.output_path = output_path or self.output_path
         self.plot_functions = {
             'single': self.plot_single_transforms,
             'double': self.plot_double_transforms,
@@ -29,6 +30,7 @@ class PlotPipeline:
             output_dir = (f"{self.output_path}/{score_type}/{plot_type}"
                           f"{'/show_architecture' if split_architecture else '/merged'}")
             os.makedirs(output_dir, exist_ok=True)
+            self.log.info(f"\nPlotting {score_type} [{plot_type} | {split_architecture}]\n")
             plot_function(  # type: ignore
                 score_type=score_type,
                 output_dir=output_dir,
@@ -112,9 +114,12 @@ class PlotPipeline:
 
 
 if __name__ == '__main__':
-    plotter_ = PlotPipeline(
-        data_path='C:/CODE/master-thesis/data/results_v2.csv'
-    )
-    plotter_.plot_all(
-        # score_types=['relative_loss']
-    )
+    for version in ['v3', 'v2', 'v1']:
+        plotter_ = PlotPipeline(
+            data_path=f'C:/CODE/master-thesis/data/results_{version}.csv',
+            output_path=f'C:/CODE/master-thesis/results/{version}',
+        )
+        plotter_.plot_all(
+
+            # score_types=['relative_loss']
+        )

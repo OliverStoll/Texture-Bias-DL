@@ -206,4 +206,5 @@ if __name__ == "__main__":
     dm.setup()
     train_dl, val_dl, test_dl = dm.all_dataloader()
     first_batch = next(iter(train_dl))
-    print()
+    # print min max to see if normalization is working
+    print(first_batch[0].min(), first_batch[0].max())

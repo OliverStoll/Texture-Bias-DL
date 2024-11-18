@@ -80,7 +80,7 @@ class TrainingModule(LightningModule):
         self.precision_micro = Precision(**metric_data, average='micro')
         self.recall_micro = Recall(**metric_data, average='micro')
         self.f1_score_micro = F1Score(**metric_data, average='micro')
-        map_micro_avg = 'micro' if dataset_name == 'bigearthnet' else 'weighted'  # TODO: fix?
+        map_micro_avg = 'micro' if dataset_name in ['bigearthnet', 'rgb_bigearthnet', 'deepglobe'] else 'weighted'  # TODO: fix?
         self.map_metric_micro = AveragePrecision(**metric_data, average=map_micro_avg)  # noqa
         # macro metrics
         self.accuracy_macro = Accuracy(**metric_data, average='macro')
@@ -116,8 +116,13 @@ class TrainingModule(LightningModule):
             self.map_metric_macro.update(predictions, labels)
             self.map_metric_classes.update(predictions, labels)
 
+    def _warn_if_images_unnormalized(self, images):
+        if images.max() > 10 or images.min() < -10:
+            self.log_.error(f"Images are not normalized: max: {images.max()}, min: {images.min()}")
+
     def calculate_metrics(self, batch, batch_idx, stage):
         images, labels_float = batch
+
         labels = labels_float.int()
         unnormalized_logits = self(images)
         loss = self.loss_fn(unnormalized_logits, labels_float)
