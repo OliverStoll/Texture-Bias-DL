@@ -19,7 +19,7 @@ class ResultsPlotter:
     }
     dataset_categories = {
         'RS': ['bigearthnet', 'rgb_bigearthnet', 'deepglobe'],
-        'CV': ['imagenet', 'caltech', 'caltech_120'],
+        'CV': ['imagenet', 'caltech', 'caltech_120', 'caltech_ft'],
     }
     model_categories = {
         'cnn': ['resnet', 'efficientnet', 'convnext', 'regnet', 'densenet', 'resnext',
@@ -57,7 +57,12 @@ class ResultsPlotter:
             'linestyle': '--',
             'marker': '^',
             'color': '#FFA07A'  # Red variation 3
-        }
+        },
+        'caltech_ft': {
+            'linestyle': '--',
+            'marker': '^',
+            'color': '#FF0000'  # Red variation 3
+        },
     }
     model_type_styles = {
         'cnn': {
@@ -82,6 +87,7 @@ class ResultsPlotter:
         'relative_loss': 'Relative Loss of Model Performance',
         'absolute_loss': 'Absolute Loss of Model Performance',
         'score': 'Model Performances (Acc or mAP macro)',
+        'relative_score': 'Relative Model Performance, compared to no transformation',
     }
 
     def _filter_experiment(self, data: pd.DataFrame, filter_experiment: str) -> pd.DataFrame:
@@ -116,6 +122,20 @@ class ResultsPlotter:
         unique_data = data.loc[unique_idx]
         return unique_data
 
+
+    def _calculate_other_score_types(self, results: pd.DataFrame) -> pd.DataFrame:
+        results['score'] = results['score_' + self.metric_type]
+        results = results.sort_values(by=['transform', 'dataset', 'model', 'transform_param'])
+        results = results.reset_index(drop=True)
+        grouped_scores = results.groupby(['transform', 'dataset', 'model'])['score']
+        results['absolute_loss'] = grouped_scores.transform(lambda x: x.iloc[0] - x)
+        results['relative_loss'] = grouped_scores.transform(
+            lambda x: (x.iloc[0] - x) / x.iloc[0]
+        )
+        results['relative_score'] = grouped_scores.transform(
+            lambda x: x / x.iloc[0]
+        )
+        return results
 
     def _prepare_data_for_plotting(
             self,
@@ -184,7 +204,7 @@ class ResultsPlotter:
             single_transform_results = results_data[results_data['transform'] == transform_name]
             self.create_single_plot(ax, single_transform_results, transform_name, dataset_names, model_names)
             if self.tight_layout:
-                fig.tight_layout(pad=2.0)
+                fig.tight_layout(pad=3.7)
             if not self.plot_as_subplots:
                 self._save_plot(fig, ax, save_name=transform_name)
         if self.plot_as_subplots:
@@ -199,7 +219,6 @@ class ResultsPlotter:
             dataset_names: list[str],
             model_names: list[str],
     ):
-        self.log.debug(f"Plotting {plot_title}")
         transform_data = transform_data[transform_data['model'].isin(model_names)]
         for dataset_name in dataset_names:
             dataset_results = transform_data[transform_data['dataset'] == dataset_name]
@@ -243,6 +262,7 @@ class ResultsPlotter:
         raise NotImplementedError
         # TODO: Implement
 
+
     def plot_dataset_averages_split_by_model_type(
             self,
             ax: plt.Axes,
@@ -267,7 +287,6 @@ class ResultsPlotter:
             dataset_results=transformer_results,
             plot_style=transformer_style
         )
-
 
     def plot_dataset_average(
             self,
@@ -336,29 +355,27 @@ class ResultsPlotter:
         handles, labels = ax.get_legend_handles_labels()
         fig.legend(handles=handles, labels=labels, loc='lower right')
         fig.supylabel(self.y_label)
+        fig.supxlabel(self.x_label)
         if self.plot_as_subplots:
             self.subplot_fig = None
             self.subplot_ax = None
+
+        # TODO: insert missing feature type if ~ is in the transform name
+        if '~' in save_name:
+            present_transform_names = save_name.split('/')[-1].split('~')
+            present_transform_categories = [category for category in self.transform_categories.keys() if any(
+                transform in present_transform_names for transform in self.transform_categories[category])]
+            missing_transform_category = [category for category in self.transform_categories.keys() if category not in present_transform_categories][0]
+            save_name = f"{missing_transform_category.capitalize()}_{save_name}"
         save_dir = f"{self.output_dir}/{save_name}.png"
         fig.savefig(save_dir, dpi=200)
-
-    def _calculate_other_score_types(self, results: pd.DataFrame) -> pd.DataFrame:
-        results['score'] = results['score_' + self.metric_type]
-        results = results.sort_values(by=['transform', 'dataset', 'model', 'transform_param'])
-        results = results.reset_index(drop=True)
-        grouped_scores = results.groupby(['transform', 'dataset', 'model'])['score']
-        results['absolute_loss'] = grouped_scores.transform(lambda x: x.iloc[0] - x)
-        results['relative_loss'] = grouped_scores.transform(
-            lambda x: (x.iloc[0] - x) / x.iloc[0]
-        )
-        return results
 
     def _set_dataset_plot_layout(self, ax: plt.Axes, x_ticks: pd.DataFrame) -> None:
         x_ticks = sorted(list(x_ticks))
         ax.set_xticks(x_ticks)
         ax.set_yticks([i * 0.1 for i in range(0, 11)])
         ax.set_ylim(bottom=0)
-        ax.set_xlabel(self.x_label)
+        # ax.set_xlabel(self.x_label)
         # ax.set_ylabel(self.y_label)
         for y_value in [i * 0.1 for i in range(1, 10)]:
             ax.axhline(y=y_value, color='gray', linestyle='--', linewidth=self._linewidth_metric)
