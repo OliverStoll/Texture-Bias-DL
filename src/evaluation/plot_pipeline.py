@@ -16,16 +16,17 @@ class PlotPipeline:
         os.makedirs(self.output_path, exist_ok=True)
         self.plot_functions = {
             'single': self.plot_single_transforms,
-            'double': self.plot_double_transforms,
+            'paired': self.plot_paired_transforms,
         }
 
     def plot_all(self, score_types=None):
         score_types = score_types or self.score_types
         self.log.info(f"Plotting all results to {self.output_path}")
-        for score_type, plot_item, split_architecture in itertools.product(
+        for score_type, plot_item, split_architecture, subplots in itertools.product(
                 score_types,
                 self.plot_functions.items(),
-                [True, False]
+                [True, False],
+                [True, False],
         ):
             plot_type, plot_function = plot_item
             output_dir = (f"{self.output_path}/{score_type}/{plot_type}"
@@ -38,11 +39,12 @@ class PlotPipeline:
                 plot_split_by_model_type=split_architecture,
             )
 
+
     def plot_single_transforms(
             self,
             output_dir: str,
-            score_type: str = 'relative_loss',
-            plot_split_by_model_type: bool = False,
+            score_type: str,
+            plot_split_by_model_type: bool,
     ):
         self.log.info(f"Plotting single transforms [{score_type} | {plot_split_by_model_type}]")
         plotter = ResultsPlotter(
@@ -52,10 +54,10 @@ class PlotPipeline:
             plot_split_by_model_type=plot_split_by_model_type,
             score_type=score_type,
         )
-        self._plot_transform_categories_single(plotter)
+        self._plot_feature_categories_single(plotter)
         self._plot_dataset_categories_single(plotter, output_dir)
 
-    def plot_double_transforms(
+    def plot_paired_transforms(
             self,
             output_dir: str,
             score_type: str = 'relative_loss',
@@ -71,13 +73,12 @@ class PlotPipeline:
             score_type=score_type,
             plot_split_by_model_type=plot_split_by_model_type,
         )
-        transform_combis = transform_combis or self._get_default_combinations()
+        transform_combis = transform_combis or self._get_transform_pairs()
         plotter.create_all_plots(save_name=f'ALL_TRANSFORMS', transform_names=transform_combis)
-
 
     @staticmethod
     def _plot_dataset_categories_single(plotter, output_dir):
-        for dataset_category in ['RS', 'CV']:
+        for dataset_category in ['RS', 'CV', 'BEN']:
             os.makedirs(f"{output_dir}/{dataset_category}", exist_ok=True)
             dataset_names = plotter.dataset_categories[dataset_category]
             plotter.create_all_plots(
@@ -91,27 +92,27 @@ class PlotPipeline:
                 )
 
     @staticmethod
-    def _plot_transform_categories_single(plotter):
+    def _plot_feature_categories_single(plotter, dataset_names=None):
+        dataset_names_dict = {'dataset_names': dataset_names} if dataset_names else {}
         plotter.create_all_plots(save_name='ALL_RESULTS')
         for transform_category, transform_names in plotter.transform_categories.items():
             plotter.create_all_plots(
                 save_name=transform_category.upper(), transform_names=transform_names,
+                **dataset_names_dict
             )
 
     @staticmethod
-    def _get_default_combinations():
-        transform_combis_ = []
+    def _get_transform_pairs():
+        transform_pairs_ = []
         for texture_t, shape_t, color_t in itertools.product(
                 ['bilateral', 'median', 'gaussian'],
                 ['patch_shuffle', 'patch_rotation'],
                 ['channel_shuffle', 'channel_inversion', 'greyscale'],
         ):
-            transform_combis_.append(f"{texture_t}~{shape_t}")
-            transform_combis_.append(f"{texture_t}~{color_t}")
-            transform_combis_.append(f"{shape_t}~{color_t}")
-        return transform_combis_
-
-
+            transform_pairs_.append(f"{texture_t}~{shape_t}")
+            transform_pairs_.append(f"{texture_t}~{color_t}")
+            transform_pairs_.append(f"{shape_t}~{color_t}")
+        return transform_pairs_
 
 
 if __name__ == '__main__':

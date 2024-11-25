@@ -43,7 +43,7 @@ class ChannelInversionTransform(object):
 
 if __name__ == "__main__":
     for param in [0, 1, 2, 3, 7, 12]:
-        for dataset in ['imagenet', 'bigearthnet']:
+        for dataset in ['caltech']:
             test_transform(
                 ChannelInversionTransform(n=param),
                 "channel_inversion",

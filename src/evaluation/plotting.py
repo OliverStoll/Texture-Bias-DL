@@ -7,6 +7,78 @@ from common_utils.config import CONFIG
 from common_utils.logger import create_logger
 
 
+class ResultsReader:
+    filter_out_transform_params = {
+        'ALL': [31],
+        'patch_shuffle': [1],
+        'patch_rotation': [1],
+        'gaussian': [0.5, 2],
+    }
+
+    def _filter_experiment(self, data: pd.DataFrame, filter_experiment: str) -> pd.DataFrame:
+        if filter_experiment == 'combined':
+            data = data[data['transform'].str.contains('~')]
+            data['transform_param_labels'] = data['transform_param'].astype(str)
+            data['transform_param'] = data['transform_param'].apply(
+                lambda x: float(x.split('~')[0]))
+        if filter_experiment == 'single':
+            data = data[~data['transform'].str.contains('~')]
+            data['transform_param_labels'] = data['transform_param'].astype(str)
+        return data.copy()
+
+    def _clean_unwanted_params(self, data: pd.DataFrame) -> pd.DataFrame:
+        data['transform_param'] = data['transform_param'].astype(float)
+        for transform_name, param_value in self.filter_out_transform_params.items():
+            if transform_name == 'ALL':
+                data = data[~data['transform_param'].isin(param_value)]
+            else:
+                data = data[~((data['transform'] == transform_name) & data['transform_param'].isin(param_value))]
+        return data
+
+    def _clean_not_enough_channels(self, data: pd.DataFrame) -> pd.DataFrame:
+        not_enough_channels_condition = (
+                (data['dataset'] != 'bigearthnet') &
+                (data['transform'].str.startswith('channel', na=False)) &
+                (data['transform_param'] > 3)
+        )
+        return data[~not_enough_channels_condition]
+
+    def _filter_out_duplicates(self, data: pd.DataFrame) -> pd.DataFrame:
+        unique_idx = data.groupby(['dataset', 'model', 'transform', 'transform_param'])['timestamp'].idxmax()
+        unique_data = data.loc[unique_idx]
+        return unique_data
+
+
+    def _calculate_other_score_types(self, results: pd.DataFrame, metric_type: str) -> pd.DataFrame:
+        results['score'] = results['score_' + metric_type]
+        results = results.sort_values(by=['transform', 'dataset', 'model', 'transform_param'])
+        results = results.reset_index(drop=True)
+        grouped_scores = results.groupby(['transform', 'dataset', 'model'])['score']
+        results['absolute_loss'] = grouped_scores.transform(lambda x: x.iloc[0] - x)
+        results['relative_loss'] = grouped_scores.transform(
+            lambda x: (x.iloc[0] - x) / x.iloc[0]
+        )
+        results['relative_score'] = grouped_scores.transform(
+            lambda x: x / x.iloc[0]
+        )
+        return results
+
+    def prepare_data(
+            self,
+            data_path: str,
+            filter_for_transforms: str = 'single',
+            metric_type: str = 'macro',
+    ):
+        data = pd.read_csv(data_path)
+        data = data.dropna()
+        data = self._filter_experiment(data, filter_for_transforms)
+        data = self._clean_unwanted_params(data)
+        data = self._clean_not_enough_channels(data)
+        data = self._filter_out_duplicates(data)
+        data = self._calculate_other_score_types(data, metric_type)
+        return data
+
+
 class ResultsPlotter:
     log = create_logger("Transform Plotter")
     output_dir = f"{CONFIG['output_dir']}/test"
@@ -20,6 +92,8 @@ class ResultsPlotter:
     dataset_categories = {
         'RS': ['bigearthnet', 'rgb_bigearthnet', 'deepglobe'],
         'CV': ['imagenet', 'caltech', 'caltech_120', 'caltech_ft'],
+        'BEN': ['bigearthnet', 'rgb_bigearthnet'],
+        'CAL_FT': ['caltech', 'caltech_ft', 'imagenet'],
     }
     model_categories = {
         'cnn': ['resnet', 'efficientnet', 'convnext', 'regnet', 'densenet', 'resnext',
@@ -68,96 +142,30 @@ class ResultsPlotter:
         'cnn': {
             'linestyle': '-',
             'marker': 'o',
-            # 'color': '#2ECC40'  # Green variation 1
         },
         'transformer': {
             'linestyle': ':',
             'marker': '^',
-            # 'color': '#FF4136'  # Red variation 2
         }
     }
     _linewidth_metric = 0.5
     errorbar_default_style = {
         'alpha': 0.6,
         'zorder': 100,
-        'capsize': 4,
+        'capsize': 3,
     }
     x_label = 'Intensity'
     y_labels = {
         'relative_loss': 'Relative Loss of Model Performance',
         'absolute_loss': 'Absolute Loss of Model Performance',
-        'score': 'Model Performances (Acc or mAP macro)',
-        'relative_score': 'Relative Model Performance, compared to no transformation',
+        'score': 'Model Performances (Acc. or mAP macro)',
+        'relative_score': 'Relative Model Performance, compared to no transformation (Acc. or mAP macro)',
     }
-
-    def _filter_experiment(self, data: pd.DataFrame, filter_experiment: str) -> pd.DataFrame:
-        if filter_experiment == 'combined':
-            data = data[data['transform'].str.contains('~')]
-            data['transform_param_labels'] = data['transform_param'].astype(str)
-            data['transform_param'] = data['transform_param'].apply(
-                lambda x: float(x.split('~')[0]))
-        if filter_experiment == 'single':
-            data = data[~data['transform'].str.contains('~')]
-            data['transform_param_labels'] = data['transform_param'].astype(str)
-        return data
-
-    def _clean_unwanted_params(
-            self, data: pd.DataFrame, filter_out_params: list[int] | None = None
-    ) -> pd.DataFrame:
-        data['transform_param'] = data['transform_param'].astype(float)
-        for param in filter_out_params or [31]:
-            data = data[data['transform_param'] != param]
-        return data
-
-    def _clean_not_enough_channels(self, data: pd.DataFrame) -> pd.DataFrame:
-        not_enough_channels_condition = (
-                (data['dataset'] != 'bigearthnet') &
-                (data['transform'].str.startswith('channel', na=False)) &
-                (data['transform_param'] > 3)
-        )
-        return data[~not_enough_channels_condition]
-
-    def _filter_out_duplicates(self, data: pd.DataFrame) -> pd.DataFrame:
-        unique_idx = data.groupby(['dataset', 'model', 'transform', 'transform_param'])['timestamp'].idxmax()
-        unique_data = data.loc[unique_idx]
-        return unique_data
-
-
-    def _calculate_other_score_types(self, results: pd.DataFrame) -> pd.DataFrame:
-        results['score'] = results['score_' + self.metric_type]
-        results = results.sort_values(by=['transform', 'dataset', 'model', 'transform_param'])
-        results = results.reset_index(drop=True)
-        grouped_scores = results.groupby(['transform', 'dataset', 'model'])['score']
-        results['absolute_loss'] = grouped_scores.transform(lambda x: x.iloc[0] - x)
-        results['relative_loss'] = grouped_scores.transform(
-            lambda x: (x.iloc[0] - x) / x.iloc[0]
-        )
-        results['relative_score'] = grouped_scores.transform(
-            lambda x: x / x.iloc[0]
-        )
-        return results
-
-    def _prepare_data_for_plotting(
-            self,
-            data_path: str,
-            filter_for_transforms: str = 'single',
-            filter_out_params: list[int] | None = None,
-    ):
-        data = pd.read_csv(data_path)
-        data = data.dropna()
-        data = self._filter_experiment(data, filter_for_transforms)
-        data = self._clean_unwanted_params(data, filter_out_params)
-        data = self._clean_not_enough_channels(data)
-        data = self._filter_out_duplicates(data)
-        data = self._calculate_other_score_types(data)
-
-        return data
 
     def __init__(
             self,
             data_path: str | None = None,
             filter_for_transforms: str | None = 'single',
-            filter_out_params: list[int] | None = None,
             output_dir: str = None,
             plot_as_subplots: bool = True,
             plot_individual_models: bool = False,
@@ -169,9 +177,7 @@ class ResultsPlotter:
         self.data_path = data_path or self.data_path
         self.y_label = self.y_labels[score_type]
         self.metric_type = metric_type
-        self.results = self._prepare_data_for_plotting(
-            data_path, filter_for_transforms, filter_out_params
-        )
+        self.results = ResultsReader().prepare_data(data_path, filter_for_transforms)
         self.score_type = score_type
         self.subplot_fig = None
         self.subplot_ax = None
@@ -234,8 +240,9 @@ class ResultsPlotter:
             cnn_style = self.model_type_styles['cnn']
             transformer_style = self.model_type_styles['transformer']
             cnn_style['color'] = transformer_style['color'] = 'black'
-            ax.plot([], [], **cnn_style, label='CNN')
-            ax.plot([], [], **transformer_style, label='Transformer')
+            # TODO: add model averages
+            # ax.plot([], [], **cnn_style, label='CNN')
+            # ax.plot([], [], **transformer_style, label='Transformer')
 
     def plot_dataset(
             self,
@@ -255,7 +262,8 @@ class ResultsPlotter:
         else:
             plot_style = self.dataset_styles[dataset_name]
             self.plot_dataset_average(
-                ax=ax, dataset_results=dataset_results, label=dataset_name, plot_style=plot_style)
+                ax=ax, dataset_results=dataset_results, label=dataset_name, plot_style=plot_style
+            )
         self._set_dataset_plot_layout(ax, x_ticks=dataset_results['transform_param'].unique())
 
     def plot_model_type_average(self):
@@ -360,7 +368,6 @@ class ResultsPlotter:
             self.subplot_fig = None
             self.subplot_ax = None
 
-        # TODO: insert missing feature type if ~ is in the transform name
         if '~' in save_name:
             present_transform_names = save_name.split('/')[-1].split('~')
             present_transform_categories = [category for category in self.transform_categories.keys() if any(
@@ -396,11 +403,7 @@ class ResultsPlotter:
         input = input if isinstance(input, list) else [input]
         return input
 
-    def _get_fig_ax(
-            self,
-            idx: int,
-            num_plots: int
-    ) -> tuple[plt.Figure, plt.Axes]:
+    def _get_fig_ax(self, idx: int, num_plots: int) -> tuple[plt.Figure, plt.Axes]:
         if self.plot_as_subplots:
             return self._get_subplot_fig_ax(idx, num_plots)
         else:

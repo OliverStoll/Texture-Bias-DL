@@ -10,6 +10,7 @@ from transforms.transforms_fns.channel_shuffle import ChannelShuffleTransform
 from transforms.transforms_fns.channel_inversion import ChannelInversionTransform
 from transforms.transforms_fns.greyscale import GrayScaleTransform
 from transforms.transforms_fns.patch_rotation import PatchRotationTransform
+from transforms.transforms_fns.noise import NoiseFilterTransform
 
 empty_transforms = [{
     'type': None,
@@ -31,58 +32,56 @@ class TransformFactory:
                 'transform_type': 'texture',
                 'class': BilateralFilterTransform,
                 'param_name': 'd',
-                'param_values': [0, 3, 5, 9, 15, 31],
-                'param_values_minimal': [5, 23],
+                'param_values': [0, 1, 3, 5, 9, 15],
             },
             'median': {
                 'transform_type': 'texture',
                 'class': MedianFilterTransform,
                 'param_name': 'kernel_size',
-                'param_values': [0, 3, 5, 9, 15, 31],
-                'param_values_minimal': [3, 5],
+                'param_values': [0, 1, 3, 5, 9, 15],
             },
             'gaussian': {
                 'transform_type': 'texture',
                 'class': GaussianBlurTransform,
                 'param_name': 'sigma',
                 'param_values': [0., 1., 3., 5., 9., 15.],
-                'param_values_minimal': [1., 5.],
             },
             'patch_shuffle': {
                 'transform_type': 'shape',
                 'class': PatchShuffleTransform,
                 'param_name': 'grid_size',
                 'param_values': [0, 2, 4, 6, 8, 11, 15],
-                'param_values_minimal': [1, 4, 8, 15],
             },
             'patch_rotation': {
                 'transform_type': 'shape',
                 'class': PatchRotationTransform,
                 'param_name': 'grid_size',
                 'param_values': [0, 2, 4, 6, 8, 11, 15],
-                'param_values_minimal': [1, 4, 8, 15],
             },
             'channel_shuffle': {
                 'transform_type': 'color',
                 'class': ChannelShuffleTransform,
                 'param_name': 'n',
                 'param_values': [0, 2, 3, 6, 12],
-                'param_values_minimal': [0, 2, 12],
             },
             'channel_inversion': {
                 'transform_type': 'color',
                 'class': ChannelInversionTransform,
                 'param_name': 'n',
                 'param_values': [0, 1, 2, 3, 6, 12],
-                'param_values_minimal': [0, 1, 2, 12]
             },
             'greyscale': {
                 'transform_type': 'color',
                 'class': GrayScaleTransform,
                 'param_name': 'enabled',
                 'param_values': [0, 1],
-                'param_values_minimal': [0, 1],
-            }
+            },
+            'noise': {
+                'transform_type': 'shape',
+                'class': NoiseFilterTransform,
+                'param_name': 'intensity',
+                'param_values': [0., 0.1, 0.3, 0.5, 0.75, 1],
+            },
         }
 
 
@@ -103,10 +102,9 @@ class TransformFactory:
         self.log.debug(f"Created {len(transform_dicts)} transforms of type {transform_name} with parameter {param_values}.")
         return transform_dicts
 
-    def get_single_default_transform(self, transform_name, use_minimal=False):
+    def get_single_default_transform(self, transform_name):
         transform = self.transforms[transform_name]
-        params = transform['param_values_minimal'] if use_minimal else transform['param_values']
-        return self.get_multiple_transforms(transform_name, transform['param_name'], params)
+        return self.get_multiple_transforms(transform_name, transform['param_name'], transform['param_values'])
 
     def get_all_default_transforms(self, use_minimal=False):
         all_transforms = []
