@@ -6,7 +6,7 @@ from common_utils.logger import create_logger
 from common_utils.config import CONFIG
 from torchvision.transforms import ToTensor
 
-from models import ModelFactory
+# from models import ModelFactory
 from data_loading.imagenet.imagenet_datamodule import ImageNetDataModule
 from data_loading.caltech.caltech_datamodule import CaltechDataModule
 from data_loading.bigearthnet.BENv2_DataModule import BENv2DataModule
@@ -18,7 +18,7 @@ from data_loading.deepglobe.deepglobe_datamodule import DeepglobeDataModule
 class DataLoaderFactory:
     """ All DataModules need to be implemented to only require a train and eval transform"""
     log = create_logger("Data Loading")
-    model_collection = ModelFactory()
+    # model_collection = ModelFactory()
     data_modules = {
         'imagenet': ImageNetDataModule,
         'caltech': CaltechDataModule,
