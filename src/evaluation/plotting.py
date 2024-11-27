@@ -14,6 +14,24 @@ class ResultsReader:
         'patch_rotation': [1],
         'gaussian': [0.5, 2],
     }
+    min_performances = {
+        'bigearthnet': 0.167,
+        'rgb_bigearthnet': 0.16,
+        'deepglobe': 0.23,
+        'caltech': 0.041,
+        'caltech_120': 0.046,
+        'caltech_ft': 0.060,
+        'imagenet': 0.001,
+    }
+    dataset_channels = {
+        'bigearthnet': 12,
+        'rgb_bigearthnet': 3,
+        'deepglobe': 3,
+        'caltech': 3,
+        'caltech_120': 3,
+        'caltech_ft': 3,
+        'imagenet': 3,
+    }
 
     def _filter_experiment(self, data: pd.DataFrame, filter_experiment: str) -> pd.DataFrame:
         if filter_experiment == 'combined':
@@ -48,6 +66,16 @@ class ResultsReader:
         unique_data = data.loc[unique_idx]
         return unique_data
 
+    def _fix_channel_param(self, data: pd.DataFrame) -> pd.DataFrame:
+        """ Only for transformations with channel, divide the transform_param by the number of channels """
+        channel_data = data[data['transform'].str.startswith('channel', na=False)]
+        for dataset_name, channels in self.dataset_channels.items():
+            dataset_data = channel_data[channel_data['dataset'] == dataset_name]
+            dataset_data['transform_param'] = dataset_data['transform_param'] / channels
+            # round
+            dataset_data['transform_param'] = dataset_data['transform_param'].apply(lambda x: round(x, 2))
+            data.update(dataset_data)
+        return data
 
     def _calculate_other_score_types(self, results: pd.DataFrame, metric_type: str) -> pd.DataFrame:
         results['score'] = results['score_' + metric_type]
@@ -61,9 +89,17 @@ class ResultsReader:
         results['relative_score'] = grouped_scores.transform(
             lambda x: x / x.iloc[0]
         )
+        results['cleaned_score'] = -1
+        for dataset_name, min_performance in self.min_performances.items():
+            dataset_results = results[results['dataset'] == dataset_name]
+            grouped_scores = dataset_results.groupby(['transform', 'model'])['score']
+            dataset_results['cleaned_score'] = grouped_scores.transform(
+                lambda x: (x - min_performance) / (x.iloc[0] - min_performance)
+            )
+            results.update(dataset_results['cleaned_score'])
         return results
 
-    def prepare_data(
+    def read_data(
             self,
             data_path: str,
             filter_for_transforms: str = 'single',
@@ -75,13 +111,14 @@ class ResultsReader:
         data = self._clean_unwanted_params(data)
         data = self._clean_not_enough_channels(data)
         data = self._filter_out_duplicates(data)
+        data = self._fix_channel_param(data)
         data = self._calculate_other_score_types(data, metric_type)
         return data
 
 
 class ResultsPlotter:
     log = create_logger("Transform Plotter")
-    output_dir = f"{CONFIG['output_dir']}/test"
+    output_dir = "C:/CODE/master-thesis/output/test"
     results_df_path = f"{output_dir}/results.csv"
     data_path = '/data/results_v1.csv'
     transform_categories = {
@@ -94,6 +131,7 @@ class ResultsPlotter:
         'CV': ['imagenet', 'caltech', 'caltech_120', 'caltech_ft'],
         'BEN': ['bigearthnet', 'rgb_bigearthnet'],
         'CAL_FT': ['caltech', 'caltech_ft', 'imagenet'],
+        'ALL': ['bigearthnet', 'rgb_bigearthnet', 'deepglobe', 'imagenet', 'caltech', 'caltech_120', 'caltech_ft'],
     }
     model_categories = {
         'cnn': ['resnet', 'efficientnet', 'convnext', 'regnet', 'densenet', 'resnext',
@@ -118,22 +156,22 @@ class ResultsPlotter:
             'color': '#7FDBFF'  # Blue variation 3
         },
         'imagenet': {
-            'linestyle': '--',
+            'linestyle': '-',
             'marker': '^',
             'color': '#8B0000'  # Red variation 1
         },
         'caltech': {
-            'linestyle': '--',
+            'linestyle': '-',
             'marker': '^',
             'color': '#FF4136'  # Red variation 2
         },
         'caltech_120': {
-            'linestyle': '--',
+            'linestyle': '-',
             'marker': '^',
             'color': '#FFA07A'  # Red variation 3
         },
         'caltech_ft': {
-            'linestyle': '--',
+            'linestyle': '-',
             'marker': '^',
             'color': '#FF0000'  # Red variation 3
         },
@@ -149,6 +187,7 @@ class ResultsPlotter:
         }
     }
     _linewidth_metric = 0.5
+    ax_label_fontsize = 16
     errorbar_default_style = {
         'alpha': 0.6,
         'zorder': 100,
@@ -158,8 +197,9 @@ class ResultsPlotter:
     y_labels = {
         'relative_loss': 'Relative Loss of Model Performance',
         'absolute_loss': 'Absolute Loss of Model Performance',
-        'score': 'Model Performances (Acc. or mAP macro)',
-        'relative_score': 'Relative Model Performance, compared to no transformation (Acc. or mAP macro)',
+        'score': 'Model Performances (Acc. / mAP macro)',
+        'relative_score': 'Relative Performance (Acc. / mAP macro)',
+        'cleaned_score': 'Relative Performance (Acc. / mAP macro)',
     }
 
     def __init__(
@@ -177,7 +217,7 @@ class ResultsPlotter:
         self.data_path = data_path or self.data_path
         self.y_label = self.y_labels[score_type]
         self.metric_type = metric_type
-        self.results = ResultsReader().prepare_data(data_path, filter_for_transforms)
+        self.results = ResultsReader().read_data(data_path, filter_for_transforms)
         self.score_type = score_type
         self.subplot_fig = None
         self.subplot_ax = None
@@ -212,7 +252,7 @@ class ResultsPlotter:
             if self.tight_layout:
                 fig.tight_layout(pad=3.7)
             if not self.plot_as_subplots:
-                self._save_plot(fig, ax, save_name=transform_name)
+                self._save_plot(fig, ax, save_name=f"{save_name}/{transform_name}")
         if self.plot_as_subplots:
             self._make_not_used_subplots_invisible(transform_names, num_plots)
             self._save_plot(fig=self.subplot_fig, ax=ax, save_name=save_name)
@@ -228,7 +268,7 @@ class ResultsPlotter:
         transform_data = transform_data[transform_data['model'].isin(model_names)]
         for dataset_name in dataset_names:
             dataset_results = transform_data[transform_data['dataset'] == dataset_name]
-            self.plot_dataset(
+            self.plot_single_dataset(
                 ax=ax,
                 dataset_name=dataset_name,
                 dataset_results=dataset_results,
@@ -244,7 +284,7 @@ class ResultsPlotter:
             # ax.plot([], [], **cnn_style, label='CNN')
             # ax.plot([], [], **transformer_style, label='Transformer')
 
-    def plot_dataset(
+    def plot_single_dataset(
             self,
             ax: plt.Axes,
             dataset_name: str,
@@ -255,13 +295,13 @@ class ResultsPlotter:
         if dataset_results.empty:
             return
         if self.plot_individual_models:
-            self.plot_dataset_multiple_models(ax, model_names, dataset_results, dataset_linestyle)
+            self.plot_single_dataset_multiple_models(ax, model_names, dataset_results, dataset_linestyle)
 
         if self.plot_split_by_model_type:
-            self.plot_dataset_averages_split_by_model_type(ax, dataset_results, dataset_name)
+            self.plot_single_dataset_avg_split_by_architecture(ax, dataset_results, dataset_name)
         else:
             plot_style = self.dataset_styles[dataset_name]
-            self.plot_dataset_average(
+            self.plot_single_dataset_average(
                 ax=ax, dataset_results=dataset_results, label=dataset_name, plot_style=plot_style
             )
         self._set_dataset_plot_layout(ax, x_ticks=dataset_results['transform_param'].unique())
@@ -271,7 +311,7 @@ class ResultsPlotter:
         # TODO: Implement
 
 
-    def plot_dataset_averages_split_by_model_type(
+    def plot_single_dataset_avg_split_by_architecture(
             self,
             ax: plt.Axes,
             results: pd.DataFrame,
@@ -284,19 +324,19 @@ class ResultsPlotter:
         cnn_style = self.model_type_styles['cnn']
         cnn_style['color'] = dataset_color
         transformer_style['color'] = dataset_color
-        self.plot_dataset_average(
+        self.plot_single_dataset_average(
             ax=ax,
             dataset_results=cnn_results,
             label=dataset_name,
             plot_style=cnn_style
         )
-        self.plot_dataset_average(
+        self.plot_single_dataset_average(
             ax=ax,
             dataset_results=transformer_results,
             plot_style=transformer_style
         )
 
-    def plot_dataset_average(
+    def plot_single_dataset_average(
             self,
             ax: plt.Axes,
             dataset_results: pd.DataFrame,
@@ -325,7 +365,7 @@ class ResultsPlotter:
             ax.set_xticks(dataset_mean['transform_param'])
             ax.set_xticklabels(dataset_mean['transform_param_labels'])
 
-    def plot_dataset_multiple_models(
+    def plot_single_dataset_multiple_models(
             self,
             ax: plt.Axes,
             model_names: list[str],
@@ -334,46 +374,36 @@ class ResultsPlotter:
     ):
         for model_name in model_names:
             model_results = dataset_results[dataset_results['model'] == model_name]
-            if not model_results.empty:
-                self.plot_dataset_single_model(ax, model_name, model_results, line_style)
+            if model_results.empty:
+                continue
+            x_values = model_results['transform_param']
+            y_values = model_results[self.score_type]
+            # sort the values by x_values
+            x_values, y_values = zip(*sorted(zip(x_values, y_values)))
+            ax.plot(
+                x_values,
+                y_values,
+                label=model_name,
+                linestyle=line_style,
+            )
 
-    def plot_dataset_single_model(
-            self,
-            ax: plt.Axes,
-            model_name: str,
-            model_results: pd.DataFrame,
-            line_style: str = '-',
-            marker: str = 'o',
-            color: str | None = None,
-    ) -> None:
-        x_values = model_results['transform_param']
-        y_values = model_results[self.score_type]
-        # sort the values by x_values
-        x_values, y_values = zip(*sorted(zip(x_values, y_values)))
-        ax.plot(
-            x_values,
-            y_values,
-            marker=marker,
-            label=model_name,
-            linestyle=line_style,
-            color=color,
-        )
 
     def _save_plot(self, fig: plt.Figure, ax: plt.Axes, save_name: str):
         handles, labels = ax.get_legend_handles_labels()
         fig.legend(handles=handles, labels=labels, loc='lower right')
-        fig.supylabel(self.y_label)
-        fig.supxlabel(self.x_label)
+        fig.supylabel(self.y_label, fontsize=self.ax_label_fontsize)
+        fig.supxlabel(self.x_label, fontsize=self.ax_label_fontsize)
         if self.plot_as_subplots:
             self.subplot_fig = None
             self.subplot_ax = None
-
         if '~' in save_name:
-            present_transform_names = save_name.split('/')[-1].split('~')
+            save_name_last = save_name.split('/')[-1]
+            present_transform_names = save_name_last.split('~')
             present_transform_categories = [category for category in self.transform_categories.keys() if any(
                 transform in present_transform_names for transform in self.transform_categories[category])]
             missing_transform_category = [category for category in self.transform_categories.keys() if category not in present_transform_categories][0]
-            save_name = f"{missing_transform_category.capitalize()}_{save_name}"
+            save_name_last = f"{missing_transform_category.capitalize()}_{save_name_last}"
+            save_name = '/'.join(save_name.split('/')[:-1]) + '/' + save_name_last
         save_dir = f"{self.output_dir}/{save_name}.png"
         fig.savefig(save_dir, dpi=200)
 
@@ -382,8 +412,6 @@ class ResultsPlotter:
         ax.set_xticks(x_ticks)
         ax.set_yticks([i * 0.1 for i in range(0, 11)])
         ax.set_ylim(bottom=0)
-        # ax.set_xlabel(self.x_label)
-        # ax.set_ylabel(self.y_label)
         for y_value in [i * 0.1 for i in range(1, 10)]:
             ax.axhline(y=y_value, color='gray', linestyle='--', linewidth=self._linewidth_metric)
 
@@ -414,16 +442,16 @@ class ResultsPlotter:
             subplot_idx: int,
             total_plots: int
     ) -> tuple[plt.Figure, plt.Axes]:
-        nrows = 4 if total_plots > 15 else 3 if total_plots > 6 else 2 if total_plots > 1 else 1
-        ncols = (total_plots - 1) // nrows + 1
-        total_subplots = nrows * ncols
+        num_columns = 4 if total_plots > 15 else 3 if total_plots > 4 else 2 if total_plots > 2 else 1
+        num_rows = (total_plots - 1) // num_columns + 1
+        total_subplots = num_rows * num_columns
         self.num_non_used_subplots = total_subplots - total_plots
         if self.subplot_fig is None:
-            self.subplot_fig, self.subplot_ax = plt.subplots(nrows, ncols,
-                                                             figsize=(5 * ncols, 5 * nrows))
-        if ncols > 1:
-            ax = self.subplot_ax[subplot_idx // ncols, subplot_idx % ncols]
-        elif nrows > 1:
+            self.subplot_fig, self.subplot_ax = plt.subplots(num_rows, num_columns,
+                                                             figsize=(5 * num_columns, 5 * num_rows))
+        if num_rows > 1 and num_columns > 1:
+            ax = self.subplot_ax[subplot_idx // num_columns, subplot_idx % num_columns]
+        elif num_columns > 1 or num_rows > 1:
             ax = self.subplot_ax[subplot_idx]
         else:
             ax = self.subplot_ax
@@ -440,13 +468,13 @@ class ResultsPlotter:
 
 
 if __name__ == '__main__':
-    for score_type in ['relative_loss', 'absolute_loss', 'score']:
+    for score_type in ['relative_score']:
         plotter = ResultsPlotter(
             score_type=score_type,
-            data_path='C:/CODE/master-thesis/data/results_v2.csv',
+            data_path='C:/CODE/master-thesis/data/results_v4.csv',
         )
         plotter.create_all_plots(
-            transform_names=['channel_shuffle'],
-            dataset_names=['deepglobe'],
-            save_name=f"TEST_{score_type}_deepglobe"
+            transform_names=['noise'],
+            # dataset_names=['deepglobe'],
+            save_name=f"TEST_NOISE"
         )

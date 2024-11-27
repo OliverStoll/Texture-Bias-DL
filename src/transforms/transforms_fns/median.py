@@ -26,10 +26,11 @@ class MedianFilterTransform:
 
 
 if __name__ == "__main__":
-    for kernel_size in [7, 9, 15]:
+    for kernel_size in [3, 5, 7, 9, 15]:
         test_transform(
             transform=MedianFilterTransform(kernel_size=kernel_size),
             transform_name="median",
             param=kernel_size,
-            dataset='deepglobe'
+            dataset='imagenet',
+            example_idx=1,
         )

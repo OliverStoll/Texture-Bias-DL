@@ -49,13 +49,12 @@ class DataLoaderFactory:
 
 
 if __name__ == "__main__":
+    from sanity_checks.check_dataloader import print_dataloader_sizes
     print("DATASETS")
     factory = DataLoaderFactory()
     for dataset_name in factory.dataset_names:
-        train, _, _ = factory.get_dataloader(dataset_name)
-        batch = next(iter(train))
-        for image_index in [0, 1, 2, 3]:
-            img_tensor = batch[0][image_index]
-            path = f"{CONFIG['example_tensors_path']}/{dataset_name}_{image_index}.pt"
-            torch.save(img_tensor, path)
+        print(f"DATASET: {dataset_name}")
+        train_loader, val_loader, test_loader = factory.get_dataloader(dataset_name)
+        print_dataloader_sizes(train_loader, val_loader, test_loader)
+        print("\n")
 

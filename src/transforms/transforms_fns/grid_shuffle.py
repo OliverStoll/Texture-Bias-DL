@@ -56,5 +56,14 @@ class PatchShuffleTransform:
 
 
 if __name__ == '__main__':
-    transform = GridShuffleTransform(4)
-    test_transform(transform, 'grid_shuffle', 5, dataset='bigearthnet')
+    from sanity_checks.check_transforms import test_transform
+    datasets = ['imagenet', 'deepglobe']
+
+    for grid_size in [0, 2, 4, 6, 8, 11]:
+        test_transform(
+            transform=PatchShuffleTransform(grid_size=grid_size),
+            transform_name="patch_shuffle",
+            param=grid_size,
+            dataset='imagenet',
+            example_idx=1,
+        )

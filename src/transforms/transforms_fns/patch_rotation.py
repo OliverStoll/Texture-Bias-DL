@@ -61,5 +61,7 @@ class PatchRotationTransform:
 
 
 if __name__ == '__main__':
-    transform = PatchRotationTransform(4)
-    test_transform(transform, 'patch_rotation', 5, dataset='imagenet')
+    dataset = 'caltech'
+    for grid_size in [0, 2, 4, 6, 8, 11, 15]:
+        transform = PatchRotationTransform(grid_size=grid_size)
+        test_transform(transform, transform_name='patch_rotation', dataset=dataset, param=grid_size)

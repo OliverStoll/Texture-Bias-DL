@@ -8,7 +8,7 @@ from src.evaluation.plotting import ResultsPlotter
 class PlotPipeline:
     log = create_logger("Plot Pipeline")
     output_path = 'C:/CODE/master-thesis/results'
-    score_types = ['relative_loss', 'score', 'absolute_loss', 'relative_score']
+    score_types = ['cleaned_score', 'relative_loss', 'score', 'absolute_loss', 'relative_score']
 
     def __init__(self, data_path: str | None = None, output_path: str | None = None):
         self.data_path = data_path
@@ -19,7 +19,7 @@ class PlotPipeline:
             'paired': self.plot_paired_transforms,
         }
 
-    def plot_all(self, score_types=None):
+    def plot_all(self, score_types=None, exclude_plot_type=None):
         score_types = score_types or self.score_types
         self.log.info(f"Plotting all results to {self.output_path}")
         for score_type, plot_item, split_architecture, subplots in itertools.product(
@@ -29,6 +29,8 @@ class PlotPipeline:
                 [True, False],
         ):
             plot_type, plot_function = plot_item
+            if exclude_plot_type == plot_type:
+                continue
             output_dir = (f"{self.output_path}/{score_type}/{plot_type}"
                           f"{'/split-architecture' if split_architecture else '/default'}")
             os.makedirs(output_dir, exist_ok=True)
@@ -54,7 +56,6 @@ class PlotPipeline:
             plot_split_by_model_type=plot_split_by_model_type,
             score_type=score_type,
         )
-        self._plot_feature_categories_single(plotter)
         self._plot_dataset_categories_single(plotter, output_dir)
 
     def plot_paired_transforms(
@@ -74,11 +75,12 @@ class PlotPipeline:
             plot_split_by_model_type=plot_split_by_model_type,
         )
         transform_combis = transform_combis or self._get_transform_pairs()
-        plotter.create_all_plots(save_name=f'ALL_TRANSFORMS', transform_names=transform_combis)
+        plotter.create_all_plots(save_name='', transform_names=transform_combis)
+        self._plot_dataset_categories_paired(plotter, output_dir, transform_combis)
 
     @staticmethod
     def _plot_dataset_categories_single(plotter, output_dir):
-        for dataset_category in ['RS', 'CV', 'BEN']:
+        for dataset_category in ['RS', 'CV', 'BEN', 'CAL_FT', 'ALL']:
             os.makedirs(f"{output_dir}/{dataset_category}", exist_ok=True)
             dataset_names = plotter.dataset_categories[dataset_category]
             plotter.create_all_plots(
@@ -92,13 +94,15 @@ class PlotPipeline:
                 )
 
     @staticmethod
-    def _plot_feature_categories_single(plotter, dataset_names=None):
-        dataset_names_dict = {'dataset_names': dataset_names} if dataset_names else {}
-        plotter.create_all_plots(save_name='ALL_RESULTS')
-        for transform_category, transform_names in plotter.transform_categories.items():
+    def _plot_dataset_categories_paired(plotter, output_dir, transform_combis):
+        for dataset_category in ['RS', 'CV', 'BEN', 'CAL_FT', 'ALL']:
+
+            os.makedirs(f"{output_dir}/{dataset_category}", exist_ok=True)
+            dataset_names = plotter.dataset_categories[dataset_category]
             plotter.create_all_plots(
-                save_name=transform_category.upper(), transform_names=transform_names,
-                **dataset_names_dict
+                save_name=dataset_category,
+                transform_names=transform_combis,
+                dataset_names=dataset_names,
             )
 
     @staticmethod
@@ -117,7 +121,7 @@ class PlotPipeline:
 
 if __name__ == '__main__':
     # TODO: split by dataset category
-    versions = ['v3', 'v2', 'v1']
+    # versions = ['v4', 'v3', 'v2', 'v1']
     versions = ['v4']
     for version in versions:
         plotter_ = PlotPipeline(
@@ -125,5 +129,6 @@ if __name__ == '__main__':
             output_path=f'C:/CODE/master-thesis/results/{version}',
         )
         plotter_.plot_all(
-            score_types=['relative_score', 'score']
+            score_types=['score'],
+            exclude_plot_type='paired',
         )

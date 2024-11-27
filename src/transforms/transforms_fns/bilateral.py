@@ -10,7 +10,7 @@ from transforms.transforms_fns._image_normalization import convert_tensor_to_np_
 
 
 class BilateralFilterTransform:
-    def __init__(self, d=5, sigma_color=75, sigma_space=75):
+    def __init__(self, d=5, sigma_color=100, sigma_space=100):
         """
         Initializes the bilateral filter parameters.
 
@@ -61,6 +61,13 @@ class BilateralFilterTransform:
 
 # Example usage
 if __name__ == "__main__":
+    dataset = 'imagenet'
     for d in [0, 1, 3, 5, 9, 15]:
         bilateral_transform = BilateralFilterTransform(d=d)
-        test_transform(bilateral_transform, "bilateral_channel", param=d, dataset='bigearthnet')
+        test_transform(
+            bilateral_transform,
+            "bilateral",
+            param=d,
+            dataset=dataset,
+            example_idx=1,
+        )
