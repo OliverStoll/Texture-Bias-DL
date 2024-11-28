@@ -129,6 +129,6 @@ if __name__ == '__main__':
             output_path=f'C:/CODE/master-thesis/results/{version}',
         )
         plotter_.plot_all(
-            score_types=['score'],
+            score_types=['cleaned_score'],
             exclude_plot_type='paired',
         )

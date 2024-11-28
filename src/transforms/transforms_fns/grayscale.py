@@ -39,7 +39,7 @@ if __name__ == "__main__":
     for dataset in ['bigearthnet', 'imagenet']:
         test_transform(
             transform,
-            transform_name='greyscale',
+            transform_name='grayscale',
             param='',
             dataset=dataset
         )

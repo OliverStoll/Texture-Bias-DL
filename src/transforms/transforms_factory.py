@@ -8,7 +8,7 @@ from transforms.transforms_fns.median import MedianFilterTransform
 from transforms.transforms_fns.gaussian_blur import GaussianBlurTransform
 from transforms.transforms_fns.channel_shuffle import ChannelShuffleTransform
 from transforms.transforms_fns.channel_inversion import ChannelInversionTransform
-from transforms.transforms_fns.greyscale import GrayScaleTransform
+from transforms.transforms_fns.grayscale import GrayScaleTransform
 from transforms.transforms_fns.patch_rotation import PatchRotationTransform
 from transforms.transforms_fns.noise import NoiseFilterTransform
 
@@ -28,55 +28,55 @@ class TransformFactory:
 
     def __init__(self):
         self.transforms = {
-            'bilateral': {
+            'Bilateral': {
                 'transform_type': 'texture',
                 'class': BilateralFilterTransform,
                 'param_name': 'd',
                 'param_values': [0, 1, 3, 5, 9, 15],
             },
-            'median': {
+            'Median': {
                 'transform_type': 'texture',
                 'class': MedianFilterTransform,
                 'param_name': 'kernel_size',
                 'param_values': [0, 1, 3, 5, 9, 15],
             },
-            'gaussian': {
+            'Gaussian': {
                 'transform_type': 'texture',
                 'class': GaussianBlurTransform,
                 'param_name': 'sigma',
                 'param_values': [0., 1., 3., 5., 9., 15.],
             },
-            'patch_shuffle': {
+            'Patch Shuffle': {
                 'transform_type': 'shape',
                 'class': PatchShuffleTransform,
                 'param_name': 'grid_size',
                 'param_values': [0, 2, 4, 6, 8, 11, 15],
             },
-            'patch_rotation': {
+            'Patch Rotation': {
                 'transform_type': 'shape',
                 'class': PatchRotationTransform,
                 'param_name': 'grid_size',
                 'param_values': [0, 2, 4, 6, 8, 11, 15],
             },
-            'channel_shuffle': {
+            'Channel Shuffle': {
                 'transform_type': 'color',
                 'class': ChannelShuffleTransform,
                 'param_name': 'n',
                 'param_values': [0, 2, 3, 6, 12],
             },
-            'channel_inversion': {
+            'Channel Inversion': {
                 'transform_type': 'color',
                 'class': ChannelInversionTransform,
                 'param_name': 'n',
                 'param_values': [0, 1, 2, 3, 6, 12],
             },
-            'greyscale': {
+            'Grayscale': {
                 'transform_type': 'color',
                 'class': GrayScaleTransform,
                 'param_name': 'enabled',
                 'param_values': [0, 1],
             },
-            'noise': {
+            'Noise': {
                 'transform_type': 'shape',
                 'class': NoiseFilterTransform,
                 'param_name': 'intensity',

@@ -7,6 +7,29 @@ from common_utils.config import CONFIG
 from common_utils.logger import create_logger
 
 
+transform_names_friendly = {
+    'channel_shuffle': 'Channel Shuffle',
+    'channel_inversion': 'Channel Inversion',
+    'greyscale': 'Grayscale',
+    'bilateral': 'Bilateral',
+    'median': 'Median',
+    'gaussian': 'Gaussian',
+    'patch_shuffle': 'Patch Shuffle',
+    'patch_rotation': 'Patch Rotation',
+    'noise': 'Noise',
+}
+dataset_names_friendly = {
+    'imagenet': 'ImageNet',
+    'caltech': 'Caltech',
+    'caltech_120': 'Caltech 120',
+    'caltech_ft': 'Caltech FT',
+    'bigearthnet': 'BigEarthNet',
+    'rgb_bigearthnet': 'RGB BigEarthNet',
+    'deepglobe': 'DeepGlobe',
+}
+
+
+
 class ResultsReader:
     filter_out_transform_params = {
         'ALL': [31],
@@ -188,12 +211,13 @@ class ResultsPlotter:
     }
     _linewidth_metric = 0.5
     ax_label_fontsize = 16
+    legend_fontsize = 15
     errorbar_default_style = {
         'alpha': 0.6,
         'zorder': 100,
         'capsize': 3,
     }
-    x_label = 'Intensity'
+    x_label = 'Transformation Intensity'
     y_labels = {
         'relative_loss': 'Relative Loss of Model Performance',
         'absolute_loss': 'Absolute Loss of Model Performance',
@@ -274,15 +298,18 @@ class ResultsPlotter:
                 dataset_results=dataset_results,
                 model_names=model_names,
             )
+        plot_title = transform_names_friendly[plot_title]
         ax.set_title(plot_title)
         # add a legend entry for the model types styles
         if self.plot_split_by_model_type:
             cnn_style = self.model_type_styles['cnn']
             transformer_style = self.model_type_styles['transformer']
-            cnn_style['color'] = transformer_style['color'] = 'black'
+            cnn_style['color'] = 'black'
+            transformer_style['color'] = 'black'
+            ax.plot([], [], label=' ', color='white')
+            ax.plot([], [], **cnn_style, label='CNN')
+            ax.plot([], [], **transformer_style, label='Transformer')
             # TODO: add model averages
-            # ax.plot([], [], **cnn_style, label='CNN')
-            # ax.plot([], [], **transformer_style, label='Transformer')
 
     def plot_single_dataset(
             self,
@@ -346,10 +373,11 @@ class ResultsPlotter:
         dataset_grouped = dataset_results.groupby('transform_param')
         dataset_mean = dataset_grouped.agg({self.score_type: 'mean'}).reset_index()
         dataset_std = dataset_grouped.agg({self.score_type: 'std'}).reset_index()
+        dataset_label = dataset_names_friendly[label] if label is not None else None
         ax.plot(
             dataset_mean['transform_param'],
             dataset_mean[self.score_type],
-            label=label,
+            label=dataset_label,
             **plot_style,
             zorder=100
         )
@@ -390,7 +418,8 @@ class ResultsPlotter:
 
     def _save_plot(self, fig: plt.Figure, ax: plt.Axes, save_name: str):
         handles, labels = ax.get_legend_handles_labels()
-        fig.legend(handles=handles, labels=labels, loc='lower right')
+        loc = 'lower right' if self.num_non_used_subplots != 0 else 'upper right'
+        fig.legend(handles=handles, labels=labels, loc=loc, fontsize=self.legend_fontsize)
         fig.supylabel(self.y_label, fontsize=self.ax_label_fontsize)
         fig.supxlabel(self.x_label, fontsize=self.ax_label_fontsize)
         if self.plot_as_subplots:
@@ -472,6 +501,7 @@ if __name__ == '__main__':
         plotter = ResultsPlotter(
             score_type=score_type,
             data_path='C:/CODE/master-thesis/data/results_v4.csv',
+            plot_split_by_model_type=True,
         )
         plotter.create_all_plots(
             transform_names=['noise'],
