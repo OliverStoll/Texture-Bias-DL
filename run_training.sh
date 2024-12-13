@@ -30,6 +30,7 @@ if [[ -n "${DATASET}" ]]; then
 else
   echo "Training on all datasets"
   ALL_DATASETS=("imagenet" "rgb-bigearthnet" "bigearthnet" "deepglobe" "caltech" "caltech-ft" "caltech-120")
+fi
 
 
 
