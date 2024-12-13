@@ -95,7 +95,7 @@ class PlotPipeline:
 
     @staticmethod
     def _plot_dataset_categories_paired(plotter, output_dir, transform_combis):
-        for dataset_category in ['RS', 'CV', 'BEN', 'CAL_FT', 'ALL']:
+        for dataset_category in ['RS', 'CV']:  # , 'BEN', 'CAL_FT', 'ALL']:
 
             os.makedirs(f"{output_dir}/{dataset_category}", exist_ok=True)
             dataset_names = plotter.dataset_categories[dataset_category]
@@ -109,9 +109,9 @@ class PlotPipeline:
     def _get_transform_pairs():
         transform_pairs_ = []
         for texture_t, shape_t, color_t in itertools.product(
-                ['bilateral', 'median', 'gaussian'],
-                ['patch_shuffle', 'patch_rotation'],
-                ['channel_shuffle', 'channel_inversion', 'greyscale'],
+                ['bilateral'],
+                ['patch_shuffle'],
+                ['channel_shuffle'],
         ):
             transform_pairs_.append(f"{texture_t}~{shape_t}")
             transform_pairs_.append(f"{texture_t}~{color_t}")
@@ -130,5 +130,4 @@ if __name__ == '__main__':
         )
         plotter_.plot_all(
             score_types=['cleaned_score'],
-            exclude_plot_type='paired',
         )

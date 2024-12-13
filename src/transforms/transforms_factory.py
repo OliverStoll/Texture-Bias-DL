@@ -32,19 +32,19 @@ class TransformFactory:
                 'transform_type': 'texture',
                 'class': BilateralFilterTransform,
                 'param_name': 'd',
-                'param_values': [0, 1, 3, 5, 9, 15],
+                'param_values': [0, 3, 5, 7, 9, 11, 15],
             },
             'Median': {
                 'transform_type': 'texture',
                 'class': MedianFilterTransform,
                 'param_name': 'kernel_size',
-                'param_values': [0, 1, 3, 5, 9, 15],
+                'param_values': [0, 3, 5, 7, 9, 11, 15],
             },
             'Gaussian': {
                 'transform_type': 'texture',
                 'class': GaussianBlurTransform,
                 'param_name': 'sigma',
-                'param_values': [0., 1., 3., 5., 9., 15.],
+                'param_values': [0., 1., 2., 3., 4., 5., 7.],
             },
             'Patch Shuffle': {
                 'transform_type': 'shape',
@@ -62,27 +62,28 @@ class TransformFactory:
                 'transform_type': 'color',
                 'class': ChannelShuffleTransform,
                 'param_name': 'n',
-                'param_values': [0, 2, 3, 6, 12],
+                'param_values': [0, 2, 3, 5, 7, 9, 12],
             },
             'Channel Inversion': {
                 'transform_type': 'color',
                 'class': ChannelInversionTransform,
                 'param_name': 'n',
-                'param_values': [0, 1, 2, 3, 6, 12],
+                'param_values': [0, 1, 2, 3, 6, 9, 12],
             },
-            'Grayscale': {
+            'Channel Mean': {
                 'transform_type': 'color',
                 'class': GrayScaleTransform,
-                'param_name': 'enabled',
-                'param_values': [0, 1],
+                'param_name': 'percentage',
+                'param_values': [0., 0.1, 0.3, 0.5, 0.7, 0.9, 1],
             },
             'Noise': {
                 'transform_type': 'shape',
                 'class': NoiseFilterTransform,
                 'param_name': 'intensity',
-                'param_values': [0., 0.1, 0.3, 0.5, 0.75, 1],
+                'param_values': [0., 0.1, 0.3, 0.5, 0.7, 0.9, 1],
             },
         }
+        self.paired_keys = ['Bilateral', 'Patch Shuffle', 'Channel Shuffle']
 
 
     def get_multiple_transforms(self, transform_name, param_name=None, param_values=None):
@@ -131,8 +132,8 @@ class TransformFactory:
         for transform in all_transforms:
             all_transforms_sorted[transform['type']].append(transform)
         transform_pair_combinations = []
-        for i, transform_name_i in enumerate(self.transforms.keys()):
-            for j, transform_name_j in enumerate(self.transforms.keys()):
+        for i, transform_name_i in enumerate(self.paired_keys):
+            for j, transform_name_j in enumerate(self.paired_keys):
                 if i >= j:
                     continue
                 transform_type_i = self.transforms[transform_name_i]['transform_type']
@@ -150,6 +151,7 @@ class TransformFactory:
                         transforms_list_j[param_j]
                     )
                     transform_pair_combinations.append(combined_pair)
+        self.log.warning(f"TESTING | CREATED PAIRS: {transform_pair_combinations}")
         return transform_pair_combinations
 
 
@@ -164,6 +166,15 @@ if __name__ == '__main__':
     dataset_names = ['imagenet', 'bigearthnet', 'caltech', 'deepglobe']
     dataset_names = ['deepglobe']
     for dataset_name in dataset_names:
+        print(f"Plotting Double {dataset_name}")
+        for single_pair in TransformFactory().get_pair_combinations_of_default_transforms():
+            test_transform(
+                transform=single_pair['transform'],
+                transform_name='double/' + single_pair['type'],
+                param=single_pair['param'],
+                dataset=dataset_name
+            )
+
         print(f"Plotting Single {dataset_name}")
         example_idx = img_idx.get(dataset_name, 0)
         for single_transform in TransformFactory().get_all_default_transforms():
@@ -175,12 +186,3 @@ if __name__ == '__main__':
                 example_idx=example_idx
             )
 
-        print(f"Plotting Double {dataset_name}")
-        for single_pair in TransformFactory().get_pair_combinations_of_default_transforms():
-            test_transform(
-                transform=single_pair['transform'],
-                transform_name='double/' + single_pair['type'],
-                param=single_pair['param'],
-                dataset=dataset_name
-
-            )

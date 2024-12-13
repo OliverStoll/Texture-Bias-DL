@@ -27,13 +27,13 @@ datasets:
     input_channels: 12
     image_size: 120
     num_labels: 19
-    epochs: 10
+    epochs: 30
   rgb_bigearthnet:
     task: multilabel
     input_channels: 3
     image_size: 120
     num_labels: 19
-    epochs: 10
+    epochs: 30
   imagenet:
     task: multiclass
     input_channels: 3
@@ -48,7 +48,7 @@ datasets:
     top_n: 20
     num_classes: 20  # manually set
     path: /media/storagecube/data/shared/datasets/Caltech101
-    epochs: 20
+    epochs: 30
   caltech_ft:
     task: multiclass
     input_channels: 3
@@ -56,7 +56,7 @@ datasets:
     top_n: 20
     num_classes: 20  # manually set
     path: /media/storagecube/data/shared/datasets/Caltech101
-    epochs: 20
+    epochs: 30
   caltech_120:
     task: multiclass
     input_channels: 3
@@ -64,7 +64,7 @@ datasets:
     top_n: 20
     num_classes: 20  # manually set
     path: /media/storagecube/data/shared/datasets/Caltech101
-    epochs: 20
+    epochs: 30
   deepglobe:
     task: multilabel
     input_channels: 3

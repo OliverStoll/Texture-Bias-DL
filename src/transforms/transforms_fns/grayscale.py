@@ -5,8 +5,8 @@ from sanity_checks.check_transforms import test_transform
 
 
 class GrayScaleTransform:
-    def __init__(self, enabled):
-        self.enabled = enabled
+    def __init__(self, percentage):
+        self.percentage = percentage
 
     def __call__(self, image: torch.Tensor) -> torch.Tensor:
         """
@@ -19,16 +19,22 @@ class GrayScaleTransform:
         Returns:
             torch.Tensor: Grayscale image replicated across the original number of channels.
         """
-        if self.enabled == 0:
+        if self.percentage == 0:
             return image
 
         # Compute the grayscale image by averaging over the channels
-        grayscale = torch.mean(image, dim=0, keepdim=True)  # Shape: [1, H, W]
+        averaged = torch.mean(image, dim=0, keepdim=True)  # Shape: [1, H, W]
 
         # Duplicate the grayscale channel to match the original number of channels
-        grayscale_replicated = grayscale.repeat(image.shape[0], 1, 1)  # Shape: [C, H, W]
+        averaged_all_channels = averaged.repeat(image.shape[0], 1, 1)  # Shape: [C, H, W]
 
-        return grayscale_replicated
+        # multiply the grayscale image by the percentage and add the original image multiplied by 1 - percentage
+        averaged_all_channels_by_percentage = averaged_all_channels * self.percentage
+        original_image_by_percentage = image * (1 - self.percentage)
+
+        combined_image = averaged_all_channels_by_percentage + original_image_by_percentage
+
+        return combined_image
 
 
 if __name__ == "__main__":

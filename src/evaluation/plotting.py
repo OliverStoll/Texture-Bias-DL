@@ -10,7 +10,7 @@ from common_utils.logger import create_logger
 transform_names_friendly = {
     'channel_shuffle': 'Channel Shuffle',
     'channel_inversion': 'Channel Inversion',
-    'greyscale': 'Grayscale',
+    'greyscale': 'Channel Mean',
     'bilateral': 'Bilateral',
     'median': 'Median',
     'gaussian': 'Gaussian',

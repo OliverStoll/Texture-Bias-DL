@@ -5,6 +5,7 @@ from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 from common_utils.config import CONFIG
+from pytorch_lightning.callbacks import EarlyStopping
 
 from data_loading.datasets import DataLoaderFactory
 from trainings_module import TrainingModule
@@ -20,8 +21,8 @@ class SingleRun:
     dl_collection = DataLoaderFactory()
     model_collection = ModelFactory()
     main_metrics = {
-        'multiclass': 'val_accuracy_micro',
-        'multilabel': 'val_mAP_micro'
+        'multiclass': 'val_accuracy_macro',
+        'multilabel': 'val_mAP_macro'
     }
 
     def __init__(
@@ -104,10 +105,18 @@ class SingleRun:
             filename='{epoch:02d}-{' + self.main_metric + ':.3f}',
             mode='max'
         )
+        early_stop_callback = EarlyStopping(
+            monitor=self.main_metric,  # Metric to monitor
+            min_delta=0.00,  # Minimum change to qualify as improvement
+            patience=5,  # Number of validation checks with no improvement
+            verbose=True,  # Enable verbose output
+            mode='max'  # Stop when the monitored metric stops decreasing
+        )
+        callbacks = [checkpoint_callback, early_stop_callback] if self.do_training else []
         trainer = Trainer(
             max_epochs=self.epochs,
             logger=self.logger,
-            callbacks=[checkpoint_callback] if self.do_training else [],
+            callbacks=callbacks,
             limit_train_batches=CONFIG['limit_train_batches'],
             limit_val_batches=CONFIG['limit_val_batches'],
             limit_test_batches=CONFIG['limit_test_batches'],
