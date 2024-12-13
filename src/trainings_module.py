@@ -50,7 +50,7 @@ class TrainingModule(LightningModule):
     log_ = create_logger("Training Module")
     loss_fns = {'multiclass': nn.CrossEntropyLoss(), 'multilabel': nn.BCEWithLogitsLoss()}
     optimizer = torch.optim.Adam
-    log_mAP_classes = False  # DISABLED DUE TO CLUTTER
+    log_mAP_classes = True  # DISABLED DUE TO CLUTTER
     all_target_names = {
         'bigearthnet': [label[1] for label in BEN_LABELS.values()],
         'rgb_bigearthnet': [label[1] for label in BEN_LABELS.values()],
