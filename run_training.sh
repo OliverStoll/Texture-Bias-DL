@@ -16,7 +16,6 @@ fi
 
 echo "TRAINING with $GPU GPUs and $CPU CPUs with [ $DATASET | $MODELS | $PRETRAINED ]"
 
-OUTPUT_LOG="logs/slurm/$DATASET.out"
 
 # if no dataset is provided, iterate over all
 
@@ -38,5 +37,7 @@ fi
 for dataset in "${ALL_DATASETS[@]}"; do
 # run the run.sh script
   echo "Starting training on $dataset"
-  sbatch --gpus=$GPU --cpus-per-task=$CPU --job-name=dataset -o $OUTPUT_LOG --wrap="$RUNNER_SCRIPT_PATH $PYTHON_SCRIPT_NAME $dataset $MODELS $PRETRAINED"
+  OUTPUT_LOG="logs/slurm/$dataset.out"
+
+  sbatch --gpus=$GPU --cpus-per-task=$CPU --job-name=$dataset -o $OUTPUT_LOG --wrap="$RUNNER_SCRIPT_PATH $PYTHON_SCRIPT_NAME $dataset $MODELS $PRETRAINED"
 done
