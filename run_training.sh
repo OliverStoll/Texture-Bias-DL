@@ -14,10 +14,9 @@ if [ ${#hours} -eq 1 ]; then  # zero pad the hours if less than 2 digits
     hours=0$hours
 fi
 
-TIMESTAMP="$hours:00:00"
-echo "TRAINING ($TIMESTAMP) with $GPU GPUs and $CPU CPUs with [ $DATASET | $MODELS | $PRETRAINED ]"
+echo "TRAINING with $GPU GPUs and $CPU CPUs with [ $DATASET | $MODELS | $PRETRAINED ]"
 
 OUTPUT_LOG="logs/slurm/$DATASET.out"
 
 # run the run.sh script
-sbatch --gpus=$GPU --cpus-per-task=$CPU --time=$TIMESTAMP --job-name=$DATASET -o $OUTPUT_LOG --wrap="$RUNNER_SCRIPT_PATH $PYTHON_SCRIPT_NAME $DATASET $MODELS $PRETRAINED"
+sbatch --gpus=$GPU --cpus-per-task=$CPU --job-name=$DATASET -o $OUTPUT_LOG --wrap="$RUNNER_SCRIPT_PATH $PYTHON_SCRIPT_NAME $DATASET $MODELS $PRETRAINED"
