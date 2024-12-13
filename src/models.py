@@ -63,13 +63,23 @@ class ModelFactory:
         in_channels, out_features = self._get_in_out_channels(dataset_config)
         img_size = dataset_config['image_size'] if model_name in self.img_size_models else None
         self.log.debug(f"Initializing model: [{model_name}{' | Pretrained' if pretrained else ''}] ")
-        model = timm.create_model(
-            model_name=full_model_name,
-            pretrained=pretrained,
-            in_chans=in_channels,
-            num_classes=out_features,
-            img_size=img_size
-        )
+        if model_name in ['vit', 'swin', 'mvit']:
+            model = timm.create_model(
+                model_name=full_model_name,
+                patch_size=12,
+                pretrained=pretrained,
+                in_chans=in_channels,
+                num_classes=out_features,
+                img_size=img_size
+            )
+        else:
+            model = timm.create_model(
+                model_name=full_model_name,
+                pretrained=pretrained,
+                in_chans=in_channels,
+                num_classes=out_features,
+                img_size=img_size
+            )
         return model
 
 
