@@ -37,7 +37,7 @@ fi
 for dataset in "${ALL_DATASETS[@]}"; do
 # run the run.sh script
   echo "Starting training on $dataset"
-  OUTPUT_LOG="logs/slurm/$dataset.out"
+  OUTPUT_LOG="logs/training/$dataset"
 
   sbatch --gpus=$GPU --cpus-per-task=$CPU --job-name=$dataset -o $OUTPUT_LOG --wrap="$RUNNER_SCRIPT_PATH $PYTHON_SCRIPT_NAME $dataset $MODELS $PRETRAINED"
 done

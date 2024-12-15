@@ -8,4 +8,4 @@ CPU=8
 echo "TESTS with $GPU GPUs and $CPU CPUs with [ $DATASET | $MODELS ]"
 
 # run the run.sh script
-sbatch --gpus=$GPU --cpus-per-task=$CPU --job-name=$DATASET -o logs/slurm/$DATASET.out --wrap="./src/.run_scripts/run.sh test_paired_transforms.py $DATASET $MODELS"
+sbatch --gpus=$GPU --cpus-per-task=$CPU --job-name=$DATASET -o logs/paired_test/$DATASET --wrap="./src/.run_scripts/run.sh test_paired_transforms.py $DATASET $MODELS"
