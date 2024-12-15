@@ -10,7 +10,7 @@ from transforms.transforms_fns._image_normalization import convert_tensor_to_np_
 
 
 class BilateralFilterTransform:
-    def __init__(self, d=5, sigma_color=100, sigma_space=100):
+    def __init__(self, d=5, sigma_color=75, sigma_space=75):
         """
         Initializes the bilateral filter parameters.
 
