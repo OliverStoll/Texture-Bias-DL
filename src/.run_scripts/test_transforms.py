@@ -9,7 +9,7 @@ run_datasets = DataLoaderFactory().dataset_names
 run_models = ModelFactory().all_model_names
 val_transforms = TransformFactory().get_all_default_transforms()
 # get only noise
-val_transforms = TransformFactory().get_single_default_transform('noise')
+# val_transforms = TransformFactory().get_single_default_transform('noise')
 
 
 # take first argument as dataset
