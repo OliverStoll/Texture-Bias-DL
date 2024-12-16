@@ -130,7 +130,7 @@ def test_transform(transform, transform_name, param, dataset, example_idx=0):
 
 
     transformed_image = to_image(transformed_tensor)
-    example_img_path = f"{save_path}/{dataset}_{param}.png"
+    example_img_path = f"{save_path}/{transform_name.split('/')[-1]}_{param}.png"
     transformed_image.save(example_img_path)
 
     original_image = to_image(original_tensor)
