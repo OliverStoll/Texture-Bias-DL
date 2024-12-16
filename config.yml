@@ -1,5 +1,5 @@
 # training parameters
-epochs: 10
+epochs: 30
 limit_train_batches:
 limit_val_batches:
 limit_test_batches:

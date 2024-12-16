@@ -3,12 +3,7 @@ MODELS=$2
 
 # define GPU and CPU for srun
 GPU=1
-CPU=8
-hours=99
-# zero pad the hours if less than 2 digits
-if [ ${#hours} -eq 1 ]; then
-    hours=0$hours
-fi
+CPU=16
 
 
 echo "TESTS with $GPU GPUs and $CPU CPUs with [ $DATASET | $MODELS ]"

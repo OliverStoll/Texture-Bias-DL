@@ -1,6 +1,12 @@
 DATASET=$1
 MODELS=$2
-PRETRAINED=$3
+
+# if dataset == caltech_ft, make PRETRAINED true
+if [[ $DATASET == "caltech_ft" ]]; then
+  PRETRAINED="Pretrained"
+else
+  PRETRAINED="False"
+fi
 
 # define GPU and CPU for srun
 RUNNER_SCRIPT_PATH="./src/.run_scripts/run.sh"

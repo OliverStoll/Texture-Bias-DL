@@ -26,7 +26,7 @@ class ModelFactory:
         "cait": "cait_s24_224",  # 24M
         "pvt": "pvt_v2_b2",  # 25.4M
         "pit": "pit_ti_224",  # 4.9M
-        'beit': 'beit_base_patch16_224',  # 86M TODO: TOO BIG
+        # 'beit': 'beit_base_patch16_224',  # 86M -> TOO BIG
         'convmixer': 'convmixer_768_32',  # 21M
         'mvit': 'mvitv2_tiny',  # 25M
     }

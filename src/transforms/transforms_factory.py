@@ -164,7 +164,7 @@ if __name__ == '__main__':
         'deepglobe': 1,
     }
     dataset_names = ['imagenet', 'bigearthnet', 'caltech', 'deepglobe']
-    dataset_names = ['deepglobe']
+    # dataset_names = ['deepglobe']
     for dataset_name in dataset_names:
         print(f"Plotting Double {dataset_name}")
         for single_pair in TransformFactory().get_pair_combinations_of_default_transforms():
