@@ -8,11 +8,7 @@ PYTHON_SCRIPT_NAME="run_training.py"
 OUTPUT_LOG="logs/slurm/$DATASET.out"
 GPU=1
 CPU=8
-hours=99
 
-if [ ${#hours} -eq 1 ]; then  # zero pad the hours if less than 2 digits
-    hours=0$hours
-fi
 
 echo "TRAINING with $GPU GPUs and $CPU CPUs with [ $DATASET | $MODELS | $PRETRAINED ]"
 
@@ -28,7 +24,7 @@ if [[ -n "${DATASET}" ]]; then
   ALL_DATASETS=($DATASET)
 else
   echo "Training on all datasets"
-  ALL_DATASETS=("imagenet" "rgb-bigearthnet" "bigearthnet" "deepglobe" "caltech" "caltech-ft" "caltech-120")
+  ALL_DATASETS=("imagenet" "rgb_bigearthnet" "bigearthnet" "deepglobe" "caltech" "caltech_ft" "caltech_120")
 fi
 
 

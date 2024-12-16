@@ -11,8 +11,7 @@ if [ ${#hours} -eq 1 ]; then
 fi
 
 
-TIMESTAMP="$hours:00:00"
-echo "TESTS ($TIMESTAMP) with $GPU GPUs and $CPU CPUs with [ $DATASET | $MODELS ]"
+echo "TESTS with $GPU GPUs and $CPU CPUs with [ $DATASET | $MODELS ]"
 
 # run the run.sh script
-sbatch --gpus=$GPU --cpus-per-task=$CPU --time=$TIMESTAMP --job-name=$DATASET -o logs/single_test/$DATASET --wrap="./src/.run_scripts/run.sh test_transforms.py $DATASET $MODELS"
+sbatch --gpus=$GPU --cpus-per-task=$CPU --job-name=$DATASET -o logs/single_test/$DATASET --wrap="./src/.run_scripts/run.sh test_transforms.py $DATASET $MODELS"
