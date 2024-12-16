@@ -145,9 +145,9 @@ class TrainingModule(LightningModule):
             # f'{stage}_f1_classes': self.f1_score_classes(predictions, labels),
             # f'{stage}_precision_classes': self.precision_classes(predictions, labels),
             # f'{stage}_recall_classes': self.recall_classes(predictions, labels),
-            f'{stage}_accuracy_classes': self.accuracy_classes(predictions, labels)
+            # f'{stage}_accuracy_classes': self.accuracy_classes(predictions, labels)
         }
-        return metrics
+        return metrics, self.accuracy_classes(predictions, labels)
 
     def log_mAP_on_epoch_end(self, stage):
         if self.task == 'multilabel':
@@ -213,20 +213,27 @@ class TrainingModule(LightningModule):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
-        metrics = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='train')
+        metrics, accuracy_classes = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='train')
         train_loss = metrics.pop('train_loss')
         self.log('train_loss', train_loss, prog_bar=True)
         self.log_dict(metrics, logger=True)
+        # log the list of classes by their name
+        for i, accuracy in enumerate(accuracy_classes):
+            self.log(f'train_accuracy_class-{self.target_names[i]}', accuracy, on_step=False, on_epoch=True)
         return train_loss
 
     def validation_step(self, batch, batch_idx):
-        metrics = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='val')
+        metrics, acc_classes = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='val')
         self.log_dict(metrics, logger=True)
+        for i, class_accuracy in enumerate(acc_classes):
+            self.log(f'val_accuracy_class-{self.target_names[i]}', class_accuracy, on_step=False, on_epoch=True)
         return metrics['val_loss']
 
     def test_step(self, batch, batch_idx):
-        metrics = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='test')
+        metrics, acc_classes = self.calculate_metrics(batch=batch, batch_idx=batch_idx, stage='test')
         self.log_dict(metrics, logger=True)
+        for i, class_accuracy in enumerate(acc_classes):
+            self.log(f'test_accuracy_class-{self.target_names[i]}', class_accuracy, on_step=False, on_epoch=True)
         return metrics['test_loss']
 
     def on_validation_epoch_end(self) -> None:
