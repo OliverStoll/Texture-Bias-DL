@@ -134,18 +134,18 @@ class TrainingModule(LightningModule):
 
         metrics = {
             f'{stage}_loss': loss,
-            f'{stage}_f1_micro': self.f1_score_micro(predictions, labels),
-            f'{stage}_precision_micro': self.precision_micro(predictions, labels),
-            f'{stage}_recall_micro': self.recall_micro(predictions, labels),
+            # f'{stage}_f1_micro': self.f1_score_micro(predictions, labels),
+            # f'{stage}_precision_micro': self.precision_micro(predictions, labels),
+            # f'{stage}_recall_micro': self.recall_micro(predictions, labels),
             f'{stage}_accuracy_micro': self.accuracy_micro(predictions, labels),
-            f'{stage}_f1_macro': self.f1_score_macro(predictions, labels),
-            f'{stage}_precision_macro': self.precision_macro(predictions, labels),
-            f'{stage}_recall_macro': self.recall_macro(predictions, labels),
+            # f'{stage}_f1_macro': self.f1_score_macro(predictions, labels),
+            # f'{stage}_precision_macro': self.precision_macro(predictions, labels),
+            # f'{stage}_recall_macro': self.recall_macro(predictions, labels),
             f'{stage}_accuracy_macro': self.accuracy_macro(predictions, labels),
             # f'{stage}_f1_classes': self.f1_score_classes(predictions, labels),
             # f'{stage}_precision_classes': self.precision_classes(predictions, labels),
             # f'{stage}_recall_classes': self.recall_classes(predictions, labels),
-            # f'{stage}_accuracy_classes': self.accuracy_classes(predictions, labels)
+            f'{stage}_accuracy_classes': self.accuracy_classes(predictions, labels)
         }
         return metrics
 
