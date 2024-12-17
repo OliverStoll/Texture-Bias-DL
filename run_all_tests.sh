@@ -11,5 +11,6 @@ for DATASET in "${ALL_DATASETS[@]}"
 do
   echo "$DATASET: "
   # run the run.sh script and get a return value
+  sbatch --gpus=$GPU --cpus-per-task=$CPU --job-name=$DATASET -o logs/single_test/$DATASET --wrap="./src/.run_scripts/run.sh test_transforms.py $DATASET"
   sbatch --gpus=$GPU --cpus-per-task=$CPU --job-name=$DATASET -o logs/paired_test/$DATASET --wrap="./src/.run_scripts/run.sh test_paired_transforms.py $DATASET"
 done
