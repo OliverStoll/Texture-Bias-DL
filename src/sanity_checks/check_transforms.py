@@ -109,7 +109,7 @@ def test_tensor_is_normalized(tensor, max_absolute_value=20):
 
 
 def test_transform(transform, transform_name, param, dataset, example_idx=0):
-    save_path = f"{CONFIG['example_image_output']}/{dataset}/{transform_name}"
+    save_path = f"{CONFIG['example_image_output']}/{dataset}"
     os.makedirs(save_path, exist_ok=True)
     original_tensor = get_example_tensor(dataset, example_idx=example_idx)
     transformed_tensor = original_tensor.clone()
@@ -130,7 +130,7 @@ def test_transform(transform, transform_name, param, dataset, example_idx=0):
 
 
     transformed_image = to_image(transformed_tensor)
-    example_img_path = f"{save_path}/{transform_name.split('/')[-1]}_{param}.png"
+    example_img_path = f"{save_path}/{transform_name}_{param}.png"
     transformed_image.save(example_img_path)
 
     original_image = to_image(original_tensor)

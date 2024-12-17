@@ -166,23 +166,26 @@ if __name__ == '__main__':
     dataset_names = ['imagenet', 'bigearthnet', 'caltech', 'deepglobe']
     # dataset_names = ['deepglobe']
     for dataset_name in dataset_names:
-        print(f"Plotting Double {dataset_name}")
-        for single_pair in TransformFactory().get_pair_combinations_of_default_transforms():
-            test_transform(
-                transform=single_pair['transform'],
-                transform_name='double/' + single_pair['type'],
-                param=single_pair['param'],
-                dataset=dataset_name
-            )
+        example_idx = img_idx.get(dataset_name, 0)
 
         print(f"Plotting Single {dataset_name}")
-        example_idx = img_idx.get(dataset_name, 0)
         for single_transform in TransformFactory().get_all_default_transforms():
             test_transform(
                 transform=single_transform['transform'],
-                transform_name='single/' + single_transform['type'],
+                transform_name=single_transform['type'],
                 param=single_transform['param'],
                 dataset=dataset_name,
                 example_idx=example_idx
             )
+
+        print(f"Plotting Double {dataset_name}")
+        for single_pair in TransformFactory().get_pair_combinations_of_default_transforms():
+            test_transform(
+                transform=single_pair['transform'],
+                transform_name=single_pair['type'],
+                param=single_pair['param'],
+                dataset=dataset_name,
+                example_idx=example_idx
+            )
+
 
