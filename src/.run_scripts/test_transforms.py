@@ -36,7 +36,7 @@ run_manager = RunManager(
     datasets=run_datasets,
     eval_transforms=val_transforms,
     continue_on_error=True,
-    test_run=100,
+    test_run=500,
     train=False,
 )
 run_manager.execute_multiple_runs()
