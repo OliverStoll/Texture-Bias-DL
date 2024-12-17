@@ -1,19 +1,12 @@
 DATASET=$1
 MODELS=$2
 
-# if dataset == caltech_ft, make PRETRAINED true
-if [[ $DATASET == "caltech_ft" ]]; then
-  PRETRAINED="Pretrained"
-else
-  PRETRAINED="False"
-fi
-
 # define GPU and CPU for srun
 RUNNER_SCRIPT_PATH="./src/.run_scripts/run.sh"
 PYTHON_SCRIPT_NAME="run_training.py"
 OUTPUT_LOG="logs/slurm/$DATASET.out"
 GPU=1
-CPU=8
+CPU=16
 
 
 echo "TRAINING with $GPU GPUs and $CPU CPUs with [ $DATASET | $MODELS | $PRETRAINED ]"
@@ -41,5 +34,5 @@ for dataset in "${ALL_DATASETS[@]}"; do
   echo "Starting training on $dataset"
   OUTPUT_LOG="logs/training/$dataset"
 
-  sbatch --gpus=$GPU --cpus-per-task=$CPU --job-name=$dataset -o $OUTPUT_LOG --wrap="$RUNNER_SCRIPT_PATH $PYTHON_SCRIPT_NAME $dataset $MODELS $PRETRAINED"
+  sbatch --gpus=$GPU --cpus-per-task=$CPU --job-name=$dataset -o $OUTPUT_LOG --wrap="$RUNNER_SCRIPT_PATH $PYTHON_SCRIPT_NAME $dataset $MODELS"
 done

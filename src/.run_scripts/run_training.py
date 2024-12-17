@@ -28,14 +28,9 @@ try:
 except IndexError:
     print("No input models")
 
-try:
-    pretrained_str = os.sys.argv[3]
-    if pretrained_str == 'Pretrained':
-        pretrained = True
-    else:
-        pretrained = None
-except IndexError:
-    print("No input pretrained")
+
+if datasets == ['caltech_ft']:
+    pretrained = True
 
 
 
