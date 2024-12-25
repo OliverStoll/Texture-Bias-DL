@@ -59,7 +59,7 @@ class ResultsExtractor:
             class_data = {key: value for key, value in log_data.items() if "class" in key}
             run_results['score_micro'] = log_data.get(run_results['metric'] + '_micro', None)
             run_results['score_macro'] = log_data.get(run_results['metric'] + '_macro', None)
-            run_results['class_scores'] = class_data
+            run_results['class_scores'] = json.dumps(class_data)
         return run_results
 
     def get_results(self, save_results=False):
@@ -77,6 +77,8 @@ class ResultsExtractor:
             try:
                 single_run_result = self.get_single_run_results(run_dir_name)
                 all_run_results.append(single_run_result)
+            except FileNotFoundError:
+                error_runs.append(run_dir_name)
             except Exception as e:
                 self.log.error(f"Error in processing run {run_dir_name}: {e}")
                 error_runs.append(run_dir_name)
