@@ -82,7 +82,7 @@ class PlotPipeline:
     @staticmethod
     def _plot_dataset_categories_single(plotter, output_dir):
         for dataset_category in ['RS', 'CV']:  # , 'BEN', 'CAL_FT', 'ALL']:
-            os.environ['YLABEL'] = 'Acc.' if dataset_category == 'CV' else 'mAP'
+            os.environ['Y_LABEL'] = 'Macro Acc. ' if dataset_category == 'CV' else 'Macro mAP '
             os.makedirs(f"{output_dir}/{dataset_category}", exist_ok=True)
             dataset_names = plotter.dataset_categories[dataset_category]
             plotter.create_all_plots(
@@ -98,7 +98,7 @@ class PlotPipeline:
     @staticmethod
     def _plot_dataset_categories_paired(plotter, output_dir, transform_combis):
         for dataset_category in ['RS', 'CV']:  # , 'BEN', 'CAL_FT', 'ALL']:
-            os.environ['YLABEL'] = 'Acc. ' if dataset_category == 'CV' else 'mAP '
+            os.environ['Y_LABEL'] = 'Macro Acc. ' if dataset_category == 'CV' else 'Macro mAP '
             os.makedirs(f"{output_dir}/{dataset_category}", exist_ok=True)
             dataset_names = plotter.dataset_categories[dataset_category]
             plotter.create_all_plots(
@@ -122,12 +122,11 @@ class PlotPipeline:
 
 
 if __name__ == '__main__':
-    # TODO: split by dataset category
     # versions = ['v4', 'v3', 'v2', 'v1']
     import warnings
     warnings.filterwarnings("ignore")
 
-    versions = ['v5']
+    versions = ['v6']
     for version in versions:
         plotter_ = PlotPipeline(
             data_path=f'C:/CODE/master-thesis/data/results_{version}.csv',
@@ -135,4 +134,5 @@ if __name__ == '__main__':
         )
         plotter_.plot_all(
             score_types=['cleaned_score'],
+            # exclude_plot_type='single',
         )

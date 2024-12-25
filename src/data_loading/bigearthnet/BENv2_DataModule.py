@@ -46,7 +46,7 @@ class BENv2DataModule(pl.LightningDataModule):
         data_dirs: Mapping[str, Union[str, Path]] = DATA_DIRS,  # MINE
         batch_size: int = CONFIG['batch_size'],  # MINE
         num_workers_dataloader: int = CONFIG['num_workers'],  # MINE
-        shuffle: Optional[bool] = None,
+        shuffle: Optional[bool] = True,  # MINE
         max_len: Optional[int] = None,
         pin_memory: Optional[bool] = CONFIG['pin_memory'],  # MINE
         patch_prefilter: Optional[Callable[[str], bool]] = None,

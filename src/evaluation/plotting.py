@@ -18,10 +18,10 @@ transform_names_friendly = {
     'patch_rotation': 'Patch Rotation',
     'noise': 'Noise',
     'bilateral~patch_shuffle': 'Bilateral & Patch Shuffle',
-    'bilateral~channel_shuffle': 'Bilateral & Channel Rotation',
+    'bilateral~channel_shuffle': 'Bilateral & Channel Shuffle',
     'patch_shuffle~channel_shuffle': 'Patch Shuffle & Channel Shuffle',
 }
-transform_names_friendly = {
+transform_names_data = {
     'channel_shuffle': 'Channel Shuffle',
     'channel_inversion': 'Channel Inversion',
     'greyscale': 'Channel Mean',
@@ -31,9 +31,9 @@ transform_names_friendly = {
     'patch_shuffle': 'Patch Shuffle',
     'patch_rotation': 'Patch Rotation',
     'noise': 'Noise',
-    'bilateral~patch_shuffle': 'Bilateral & Patch Shuffle',
-    'bilateral~channel_shuffle': 'Bilateral & Channel Rotation',
-    'patch_shuffle~channel_shuffle': 'Patch Shuffle & Channel Shuffle',
+    'bilateral~patch_shuffle': 'Bilateral~Patch Shuffle',
+    'bilateral~channel_shuffle': 'Bilateral~Channel Shuffle',
+    'patch_shuffle~channel_shuffle': 'Patch Shuffle~Channel Shuffle',
 }
 dataset_names_friendly = {
     'imagenet': 'ImageNet',
@@ -55,12 +55,12 @@ class ResultsReader:
         'gaussian': [0.5, 2],
     }
     min_performances = {
-        'bigearthnet': 0.14,
-        'rgb_bigearthnet': 0.14,
+        'bigearthnet': 0.167,
+        'rgb_bigearthnet': 0.16,
         'deepglobe': 0.23,
         'caltech': 0.041,
-        'caltech_120': 0.041,
-        'caltech_ft': 0.041,
+        'caltech_120': 0.046,
+        'caltech_ft': 0.060,
         'imagenet': 0.001,
     }
     dataset_channels = {
@@ -232,7 +232,7 @@ class ResultsPlotter:
     }
     _linewidth_metric = 0.5
     ax_label_fontsize = 12
-    legend_fontsize = 13
+    legend_fontsize = 12
     errorbar_default_style = {
         'alpha': 0.6,
         'zorder': 100,
@@ -244,7 +244,7 @@ class ResultsPlotter:
         'Patch Shuffle': 'Grid Size',
         'Patch Rotation': 'Grid Size',
         'Gaussian': 'Standard Deviation',
-        'Bilateral': 'Diameter',
+        'Bilateral': 'Kernel Diameter',
         'Median': 'Kernel Size',
         'Channel Shuffle': 'Share of Shuffled Channels',
         'Channel Inversion': 'Share of Inverted Channels',
@@ -254,8 +254,8 @@ class ResultsPlotter:
         'relative_loss': 'Relative Loss of Model Performance',
         'absolute_loss': 'Absolute Loss of Model Performance',
         'score': 'Model Performances (Acc. / mAP macro)',
-        'relative_score': 'Performance relative to Baseline',
-        'cleaned_score': 'Performance relative to Baseline',
+        'relative_score': 'Relative ',
+        'cleaned_score': 'Relative ',
     }
 
 
@@ -303,7 +303,7 @@ class ResultsPlotter:
         results_data = self.results
         num_plots = len(transform_names)
         for idx, transform_name in enumerate(transform_names):
-            transform_name = transform_names_friendly[transform_name]
+            transform_name = transform_names_data[transform_name]
             fig, ax = self._get_fig_ax(idx, num_plots)
             single_transform_results = results_data[results_data['transform'] == transform_name]
             self.create_single_plot(ax, single_transform_results, transform_name, dataset_names, model_names)
@@ -460,7 +460,7 @@ class ResultsPlotter:
             loc = 'lower left'
         fig.legend(handles=handles, labels=labels, loc=loc, fontsize=self.legend_fontsize)
         x_label = self.x_labels[transform_name] if transform_name in self.x_labels else self.x_label
-        y_label = f"{os.getenv('Y_LABEL', '')}{self.y_label}"
+        y_label = f"{self.y_label}{os.getenv('Y_LABEL', '')}Performance"
         fig.supxlabel(x_label, fontsize=self.ax_label_fontsize)
         fig.supylabel(y_label, fontsize=self.ax_label_fontsize)
         if self.plot_as_subplots:
@@ -481,8 +481,8 @@ class ResultsPlotter:
         x_ticks = sorted(list(x_ticks))
         ax.set_xticks(x_ticks)
         ax.set_yticks([i * 0.1 for i in range(0, 11)])
-        ax.set_ylim(bottom=0, top=1.02)
-        for y_value in [i * 0.1 for i in range(1, 11)]:
+        ax.set_ylim(bottom=-0.06, top=1.02)
+        for y_value in [i * 0.1 for i in range(0, 11)]:
             ax.axhline(y=y_value, color='gray', linestyle='--', linewidth=self._linewidth_metric)
 
     def _reformat_all_inputs_as_lists(
