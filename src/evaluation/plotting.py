@@ -17,12 +17,29 @@ transform_names_friendly = {
     'patch_shuffle': 'Patch Shuffle',
     'patch_rotation': 'Patch Rotation',
     'noise': 'Noise',
+    'bilateral~patch_shuffle': 'Bilateral & Patch Shuffle',
+    'bilateral~channel_shuffle': 'Bilateral & Channel Rotation',
+    'patch_shuffle~channel_shuffle': 'Patch Shuffle & Channel Shuffle',
+}
+transform_names_friendly = {
+    'channel_shuffle': 'Channel Shuffle',
+    'channel_inversion': 'Channel Inversion',
+    'greyscale': 'Channel Mean',
+    'bilateral': 'Bilateral',
+    'median': 'Median',
+    'gaussian': 'Gaussian',
+    'patch_shuffle': 'Patch Shuffle',
+    'patch_rotation': 'Patch Rotation',
+    'noise': 'Noise',
+    'bilateral~patch_shuffle': 'Bilateral & Patch Shuffle',
+    'bilateral~channel_shuffle': 'Bilateral & Channel Rotation',
+    'patch_shuffle~channel_shuffle': 'Patch Shuffle & Channel Shuffle',
 }
 dataset_names_friendly = {
     'imagenet': 'ImageNet',
     'caltech': 'Caltech',
     'caltech_120': 'Caltech 120',
-    'caltech_ft': 'Caltech FT',
+    'caltech_ft': 'Caltech Finet.',
     'bigearthnet': 'BigEarthNet',
     'rgb_bigearthnet': 'RGB BigEarthNet',
     'deepglobe': 'DeepGlobe',
@@ -38,12 +55,12 @@ class ResultsReader:
         'gaussian': [0.5, 2],
     }
     min_performances = {
-        'bigearthnet': 0.167,
-        'rgb_bigearthnet': 0.16,
+        'bigearthnet': 0.14,
+        'rgb_bigearthnet': 0.14,
         'deepglobe': 0.23,
         'caltech': 0.041,
-        'caltech_120': 0.046,
-        'caltech_ft': 0.060,
+        'caltech_120': 0.041,
+        'caltech_ft': 0.041,
         'imagenet': 0.001,
     }
     dataset_channels = {
@@ -79,7 +96,7 @@ class ResultsReader:
     def _clean_not_enough_channels(self, data: pd.DataFrame) -> pd.DataFrame:
         not_enough_channels_condition = (
                 (data['dataset'] != 'bigearthnet') &
-                (data['transform'].str.startswith('channel', na=False)) &
+                (data['transform'].str.startswith('Channel', na=False)) &
                 (data['transform_param'] > 3)
         )
         return data[~not_enough_channels_condition]
@@ -91,7 +108,8 @@ class ResultsReader:
 
     def _fix_channel_param(self, data: pd.DataFrame) -> pd.DataFrame:
         """ Only for transformations with channel, divide the transform_param by the number of channels """
-        channel_data = data[data['transform'].str.startswith('channel', na=False)]
+        # get all transforms that are Channel Inversion or Channel Shuffle, but not Channel Mean
+        channel_data = data[data['transform'].str.startswith('Channel', na=False) & ~data['transform'].str.contains('Channel Mean')]
         for dataset_name, channels in self.dataset_channels.items():
             dataset_data = channel_data[channel_data['dataset'] == dataset_name]
             dataset_data['transform_param'] = dataset_data['transform_param'] / channels
@@ -130,6 +148,9 @@ class ResultsReader:
     ):
         data = pd.read_csv(data_path)
         data = data.dropna()
+        # filter out timestamps string lower than 20241216
+        data['dt_timestamp'] = pd.to_datetime(data['timestamp'], format='%Y%m%d_%H%M%S')
+        data = data[data['dt_timestamp'] >= pd.Timestamp('2024-12-16')]
         data = self._filter_experiment(data, filter_for_transforms)
         data = self._clean_unwanted_params(data)
         data = self._clean_not_enough_channels(data)
@@ -210,21 +231,33 @@ class ResultsPlotter:
         }
     }
     _linewidth_metric = 0.5
-    ax_label_fontsize = 16
-    legend_fontsize = 15
+    ax_label_fontsize = 12
+    legend_fontsize = 13
     errorbar_default_style = {
         'alpha': 0.6,
         'zorder': 100,
         'capsize': 3,
     }
     x_label = 'Transformation Intensity'
+    x_labels = {
+        'Noise': 'Noise Intensity',
+        'Patch Shuffle': 'Grid Size',
+        'Patch Rotation': 'Grid Size',
+        'Gaussian': 'Standard Deviation',
+        'Bilateral': 'Diameter',
+        'Median': 'Kernel Size',
+        'Channel Shuffle': 'Share of Shuffled Channels',
+        'Channel Inversion': 'Share of Inverted Channels',
+        'Channel Mean': 'Channel Mean Factor',
+    }
     y_labels = {
         'relative_loss': 'Relative Loss of Model Performance',
         'absolute_loss': 'Absolute Loss of Model Performance',
         'score': 'Model Performances (Acc. / mAP macro)',
-        'relative_score': 'Relative Performance (Acc. / mAP macro)',
-        'cleaned_score': 'Relative Performance (Acc. / mAP macro)',
+        'relative_score': 'Performance relative to Baseline',
+        'cleaned_score': 'Performance relative to Baseline',
     }
+
 
     def __init__(
             self,
@@ -234,7 +267,7 @@ class ResultsPlotter:
             plot_as_subplots: bool = True,
             plot_individual_models: bool = False,
             plot_split_by_model_type: bool = False,
-            tight_layout: bool = True,
+            tight_layout: bool = False,
             metric_type: str = 'macro',
             score_type: str = 'relative_loss',
     ):
@@ -270,13 +303,14 @@ class ResultsPlotter:
         results_data = self.results
         num_plots = len(transform_names)
         for idx, transform_name in enumerate(transform_names):
+            transform_name = transform_names_friendly[transform_name]
             fig, ax = self._get_fig_ax(idx, num_plots)
             single_transform_results = results_data[results_data['transform'] == transform_name]
             self.create_single_plot(ax, single_transform_results, transform_name, dataset_names, model_names)
             if self.tight_layout:
                 fig.tight_layout(pad=3.7)
             if not self.plot_as_subplots:
-                self._save_plot(fig, ax, save_name=f"{save_name}/{transform_name}")
+                self._save_plot(fig, ax, save_name=f"{save_name}/{transform_name}", transform_name=transform_name)
         if self.plot_as_subplots:
             self._make_not_used_subplots_invisible(transform_names, num_plots)
             self._save_plot(fig=self.subplot_fig, ax=ax, save_name=save_name)
@@ -298,7 +332,10 @@ class ResultsPlotter:
                 dataset_results=dataset_results,
                 model_names=model_names,
             )
-        plot_title = transform_names_friendly[plot_title]
+        try:
+            plot_title = transform_names_friendly[plot_title]
+        except KeyError:
+            pass
         ax.set_title(plot_title)
         # add a legend entry for the model types styles
         if self.plot_split_by_model_type:
@@ -416,12 +453,16 @@ class ResultsPlotter:
             )
 
 
-    def _save_plot(self, fig: plt.Figure, ax: plt.Axes, save_name: str):
+    def _save_plot(self, fig: plt.Figure, ax: plt.Axes, save_name: str, transform_name: str = None) -> None:
         handles, labels = ax.get_legend_handles_labels()
         loc = 'lower right' if self.num_non_used_subplots != 0 else 'upper right'
+        if self.plot_as_subplots is not True:
+            loc = 'lower left'
         fig.legend(handles=handles, labels=labels, loc=loc, fontsize=self.legend_fontsize)
-        fig.supylabel(self.y_label, fontsize=self.ax_label_fontsize)
-        fig.supxlabel(self.x_label, fontsize=self.ax_label_fontsize)
+        x_label = self.x_labels[transform_name] if transform_name in self.x_labels else self.x_label
+        y_label = f"{os.getenv('Y_LABEL', '')}{self.y_label}"
+        fig.supxlabel(x_label, fontsize=self.ax_label_fontsize)
+        fig.supylabel(y_label, fontsize=self.ax_label_fontsize)
         if self.plot_as_subplots:
             self.subplot_fig = None
             self.subplot_ax = None
@@ -440,8 +481,8 @@ class ResultsPlotter:
         x_ticks = sorted(list(x_ticks))
         ax.set_xticks(x_ticks)
         ax.set_yticks([i * 0.1 for i in range(0, 11)])
-        ax.set_ylim(bottom=0)
-        for y_value in [i * 0.1 for i in range(1, 10)]:
+        ax.set_ylim(bottom=0, top=1.02)
+        for y_value in [i * 0.1 for i in range(1, 11)]:
             ax.axhline(y=y_value, color='gray', linestyle='--', linewidth=self._linewidth_metric)
 
     def _reformat_all_inputs_as_lists(

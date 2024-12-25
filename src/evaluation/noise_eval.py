@@ -3,10 +3,10 @@ from plotting import ResultsReader
 
 reader = ResultsReader()
 data = reader.read_data(
-    data_path='C:/CODE/master-thesis/data/results_v4.csv',
+    data_path='C:/CODE/master-thesis/data/results_v5.csv',
     filter_for_transforms='single',
 )
-data = data[data['transform'] == 'noise']
+data = data[data['transform'] == 'Noise']
 
 # calculate mean and std for each dataset
 for dataset in data['dataset'].unique():

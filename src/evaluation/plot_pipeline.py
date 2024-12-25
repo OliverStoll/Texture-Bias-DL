@@ -54,6 +54,7 @@ class PlotPipeline:
             output_dir=output_dir,
             filter_for_transforms='single',
             plot_split_by_model_type=plot_split_by_model_type,
+            plot_as_subplots=False,
             score_type=score_type,
         )
         self._plot_dataset_categories_single(plotter, output_dir)
@@ -80,15 +81,16 @@ class PlotPipeline:
 
     @staticmethod
     def _plot_dataset_categories_single(plotter, output_dir):
-        for dataset_category in ['RS', 'CV', 'BEN', 'CAL_FT', 'ALL']:
+        for dataset_category in ['RS', 'CV']:  # , 'BEN', 'CAL_FT', 'ALL']:
+            os.environ['YLABEL'] = 'Acc.' if dataset_category == 'CV' else 'mAP'
             os.makedirs(f"{output_dir}/{dataset_category}", exist_ok=True)
             dataset_names = plotter.dataset_categories[dataset_category]
             plotter.create_all_plots(
-                save_name=f"{dataset_category}/ALL_TRANSFORMS", dataset_names=dataset_names,
+                save_name=f"{dataset_category}", dataset_names=dataset_names,
             )
             for transform_category, transform_names in plotter.transform_categories.items():
                 plotter.create_all_plots(
-                    save_name=f"{dataset_category}/{transform_category.upper()}",
+                    save_name=f"{dataset_category}",
                     transform_names=transform_names,
                     dataset_names=dataset_names,
                 )
@@ -96,7 +98,7 @@ class PlotPipeline:
     @staticmethod
     def _plot_dataset_categories_paired(plotter, output_dir, transform_combis):
         for dataset_category in ['RS', 'CV']:  # , 'BEN', 'CAL_FT', 'ALL']:
-
+            os.environ['YLABEL'] = 'Acc. ' if dataset_category == 'CV' else 'mAP '
             os.makedirs(f"{output_dir}/{dataset_category}", exist_ok=True)
             dataset_names = plotter.dataset_categories[dataset_category]
             plotter.create_all_plots(
@@ -122,7 +124,10 @@ class PlotPipeline:
 if __name__ == '__main__':
     # TODO: split by dataset category
     # versions = ['v4', 'v3', 'v2', 'v1']
-    versions = ['v4']
+    import warnings
+    warnings.filterwarnings("ignore")
+
+    versions = ['v5']
     for version in versions:
         plotter_ = PlotPipeline(
             data_path=f'C:/CODE/master-thesis/data/results_{version}.csv',
