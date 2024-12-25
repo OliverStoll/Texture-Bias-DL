@@ -40,7 +40,7 @@ datasets:
     path: /media/storagecube/data/shared/datasets/ImageNet-2012
     image_size: 224
     num_classes: 1000
-    epochs: 0
+    epochs: 30
   caltech:
     task: multiclass
     input_channels: 3

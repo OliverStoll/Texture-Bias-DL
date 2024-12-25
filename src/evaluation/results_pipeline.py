@@ -51,6 +51,17 @@ class ResultsExtractor:
 
         return run_results
 
+    def get_single_run_results(self, run_dir_name):
+        log_file_path = f"{self.all_runs_dir}/{run_dir_name}/{self.internal_log_path}"
+        run_results = self._get_run_details(run_dir_name)
+        with open(log_file_path, 'r') as file:
+            log_data = json.load(file)
+            class_data = {key: value for key, value in log_data.items() if "class" in key}
+            run_results['score_micro'] = log_data.get(run_results['metric'] + '_micro', None)
+            run_results['score_macro'] = log_data.get(run_results['metric'] + '_macro', None)
+            run_results['class_scores'] = json.dumps(class_data)
+        return run_results
+
     def get_results(self, save_results=False):
         error_runs = []
         all_run_results = []
@@ -64,14 +75,12 @@ class ResultsExtractor:
             if not run_dir_name.startswith('run'):
                 continue
             try:
-                log_file_path = f"{self.all_runs_dir}/{run_dir_name}/{self.internal_log_path}"
-                run_results = self._get_run_details(run_dir_name)
-                with open(log_file_path, 'r') as file:
-                    log_data = json.load(file)
-                    run_results['score_micro'] = log_data.get(run_results['metric']+'_micro', None)
-                    run_results['score_macro'] = log_data.get(run_results['metric']+'_macro', None)
-                all_run_results.append(run_results)
+                single_run_result = self.get_single_run_results(run_dir_name)
+                all_run_results.append(single_run_result)
+            except FileNotFoundError:
+                error_runs.append(run_dir_name)
             except Exception as e:
+                self.log.error(f"Error in processing run {run_dir_name}: {e}")
                 error_runs.append(run_dir_name)
 
         # self.log.debug(f"Error in processing runs: {', '.join(error_runs)}")
