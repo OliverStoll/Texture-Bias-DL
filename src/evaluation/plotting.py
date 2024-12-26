@@ -10,7 +10,7 @@ from common_utils.logger import create_logger
 transform_names_friendly = {
     'channel_shuffle': 'Channel Shuffle',
     'channel_inversion': 'Channel Inversion',
-    'greyscale': 'Channel Mean',
+    'greyscale': 'Channel Averaging',
     'bilateral': 'Bilateral',
     'median': 'Median',
     'gaussian': 'Gaussian',
@@ -55,13 +55,13 @@ class ResultsReader:
         'gaussian': [0.5, 2],
     }
     min_performances = {
-        'bigearthnet': 0.167,
-        'rgb_bigearthnet': 0.16,
-        'deepglobe': 0.23,
-        'caltech': 0.041,
-        'caltech_120': 0.046,
-        'caltech_ft': 0.060,
-        'imagenet': 0.001,
+        'bigearthnet': 0.146761,
+        'rgb_bigearthnet': 0.146667,
+        'deepglobe': 0.332418,  # 0.23
+        'caltech': 0.041328,
+        'caltech_120': 0.044320,
+        'caltech_ft': 0.055664,
+        'imagenet': 0.000969,
     }
     dataset_channels = {
         'bigearthnet': 12,
@@ -248,7 +248,7 @@ class ResultsPlotter:
         'Median': 'Kernel Size',
         'Channel Shuffle': 'Share of Shuffled Channels',
         'Channel Inversion': 'Share of Inverted Channels',
-        'Channel Mean': 'Channel Mean Factor',
+        'Channel Mean': 'Channel Averaging Factor',
     }
     y_labels = {
         'relative_loss': 'Relative Loss of Model Performance',
@@ -481,7 +481,7 @@ class ResultsPlotter:
         x_ticks = sorted(list(x_ticks))
         ax.set_xticks(x_ticks)
         ax.set_yticks([i * 0.1 for i in range(0, 11)])
-        ax.set_ylim(bottom=-0.06, top=1.02)
+        ax.set_ylim(bottom=-0.067, top=1.02)
         for y_value in [i * 0.1 for i in range(0, 11)]:
             ax.axhline(y=y_value, color='gray', linestyle='--', linewidth=self._linewidth_metric)
 
