@@ -1,3 +1,5 @@
+import os
+
 from configilm import util
 util.MESSAGE_LEVEL = util.MessageLevel.INFO  # use INFO to see all messages
 from configilm.extra.DataSets import BENv2_DataSet
@@ -18,8 +20,9 @@ ds = BENv2_DataSet.BENv2DataSet(
     data_dirs=data_dirs
 )
 
-img, lbl = ds[0]
-print(img.shape, lbl.shape)
-
-# save image
-save_image(img, "test.png")
+output_path = "output"
+os.makedirs(output_path, exist_ok=True)
+for i in range(10):
+    img, lbl = ds[i]
+    print(i, lbl)
+    save_image(img, f"{output_path}/BEN_{i}_{lbl}.png")
