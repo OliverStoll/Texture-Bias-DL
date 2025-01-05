@@ -24,5 +24,7 @@ output_path = "output/show_ben"
 os.makedirs(output_path, exist_ok=True)
 for i in range(10):
     img, lbl = ds[i]
+    # make label human readable
+    lbl = torch.where(lbl == 1)[0]
     print(i, lbl)
-    save_image(img, f"{output_path}/BEN_{i}_{list(lbl)}.png")
+    save_image(img, f"{output_path}/BEN_{i}_{lbl}.png")
