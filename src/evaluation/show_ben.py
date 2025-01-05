@@ -6,7 +6,7 @@ from configilm.extra.DataSets import BENv2_DataSet
 from configilm.extra.DataModules import BENv2_DataModule
 from pathlib import Path
 import torch
-from torchvision.utils import save_image
+
 
 data_dirs = {
             "images_lmdb": Path("/faststorage") / "BigEarthNet-V2" / "BigEarthNet-V2-LMDB",
@@ -27,7 +27,7 @@ for i in range(10):
     print(img)
     # make label human readable
     lbl = torch.where(lbl == 1)[0]
-    # convert tensor to string
+    # save tensor
     lbl = ",".join([str(i.item()) for i in lbl])
     print(i, lbl)
-    save_image(img, f"{output_path}/BEN_{i}_{lbl}.png")
+    img.save(f"{output_path}/{i}_{lbl}.png")
