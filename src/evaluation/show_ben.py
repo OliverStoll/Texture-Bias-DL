@@ -22,5 +22,8 @@ print(img.shape, lbl.shape)
 # save image
 import PIL
 from PIL import Image
+import numpy as np
+img = np.moveaxis(img, 0, -1)
+print(img.shape)
 img = Image.fromarray(img)
 img.save("test.png")
