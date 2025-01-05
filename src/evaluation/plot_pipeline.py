@@ -126,7 +126,7 @@ if __name__ == '__main__':
     import warnings
     warnings.filterwarnings("ignore")
 
-    versions = ['v6']
+    versions = ['v7']
     for version in versions:
         plotter_ = PlotPipeline(
             data_path=f'C:/CODE/master-thesis/data/results_{version}.csv',
@@ -134,5 +134,5 @@ if __name__ == '__main__':
         )
         plotter_.plot_all(
             score_types=['cleaned_score'],
-            # exclude_plot_type='single',
+            exclude_plot_type='single',
         )

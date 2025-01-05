@@ -151,6 +151,8 @@ class ResultsReader:
         # filter out timestamps string lower than 20241216
         data['dt_timestamp'] = pd.to_datetime(data['timestamp'], format='%Y%m%d_%H%M%S')
         data = data[data['dt_timestamp'] >= pd.Timestamp('2024-12-16')]
+        # filter out vit for imagenet
+        data = data[~((data['model'] == 'vit') & (data['dataset'] == 'imagenet'))]
         data = self._filter_experiment(data, filter_for_transforms)
         data = self._clean_unwanted_params(data)
         data = self._clean_not_enough_channels(data)
@@ -232,9 +234,9 @@ class ResultsPlotter:
     }
     _linewidth_metric = 0.5
     ax_label_fontsize = 12
-    legend_fontsize = 12
+    legend_fontsize = 11
     errorbar_default_style = {
-        'alpha': 0.6,
+        'alpha': 0.5,
         'zorder': 100,
         'capsize': 3,
     }
@@ -249,6 +251,9 @@ class ResultsPlotter:
         'Channel Shuffle': 'Share of Shuffled Channels',
         'Channel Inversion': 'Share of Inverted Channels',
         'Channel Mean': 'Channel Averaging Factor',
+        'Bilateral~Patch Shuffle': 'Kernel Diameter & Grid Size',
+        'Bilateral~Channel Shuffle': 'Kernel Diameter & Shuffled Channels',
+        'Patch Shuffle~Channel Shuffle': 'Grid Size & Shuffled Channels',
     }
     y_labels = {
         'relative_loss': 'Relative Loss of Model Performance',
@@ -286,6 +291,10 @@ class ResultsPlotter:
         self.plot_as_subplots = plot_as_subplots
         self.plot_individual_models = plot_individual_models
         self.plot_split_by_model_type = plot_split_by_model_type
+        if self.plot_split_by_model_type:
+            self.errorbar_default_style['alpha'] = 0.0
+        else:
+            self.errorbar_default_style['alpha'] = 0.5
         self.tight_layout = tight_layout
         os.makedirs(self.output_dir, exist_ok=True)
 
@@ -336,7 +345,7 @@ class ResultsPlotter:
             plot_title = transform_names_friendly[plot_title]
         except KeyError:
             pass
-        ax.set_title(plot_title)
+        # ax.set_title(plot_title)
         # add a legend entry for the model types styles
         if self.plot_split_by_model_type:
             cnn_style = self.model_type_styles['cnn']
@@ -410,6 +419,10 @@ class ResultsPlotter:
         dataset_grouped = dataset_results.groupby('transform_param')
         dataset_mean = dataset_grouped.agg({self.score_type: 'mean'}).reset_index()
         dataset_std = dataset_grouped.agg({self.score_type: 'std'}).reset_index()
+        dataset_names = dataset_results[
+            ['transform_param', 'transform_param_labels']].drop_duplicates()
+        dataset_mean = dataset_mean.merge(dataset_names, on='transform_param', how='left')
+        dataset_std = dataset_std.merge(dataset_names, on='transform_param', how='left')
         dataset_label = dataset_names_friendly[label] if label is not None else None
         ax.plot(
             dataset_mean['transform_param'],
@@ -427,8 +440,23 @@ class ResultsPlotter:
             **self.errorbar_default_style,
         )
         if 'transform_param_labels' in dataset_mean.columns:
-            ax.set_xticks(dataset_mean['transform_param'])
-            ax.set_xticklabels(dataset_mean['transform_param_labels'])
+            x_labels = {
+                'Bilateral~Channel Shuffle': ['0,0', '']
+            }
+            if dataset_results['dataset'].iloc[0] not in ['rgb_bigearthnet', 'deepglobe']:
+                # divide the second value after ~ with the number of channels
+                if 'Channel' in dataset_results['transform'].iloc[0]:
+                    num_channels = ResultsReader.dataset_channels[dataset_results['dataset'].iloc[0]]
+                    dataset_mean['transform_param_labels'] = dataset_mean['transform_param_labels'].apply(
+                        lambda x: f"{x.split('~')[0]}~{min(int(x.split('~')[1]), num_channels)}"
+                    )
+
+                # replace ~ with , for better readability
+                dataset_mean['transform_param_labels'] = dataset_mean['transform_param_labels'].apply(
+                    lambda x: x.replace('~', ',')
+                )
+                ax.set_xticks(dataset_mean['transform_param'])
+                ax.set_xticklabels(dataset_mean['transform_param_labels'])
 
     def plot_single_dataset_multiple_models(
             self,
@@ -481,7 +509,7 @@ class ResultsPlotter:
         x_ticks = sorted(list(x_ticks))
         ax.set_xticks(x_ticks)
         ax.set_yticks([i * 0.1 for i in range(0, 11)])
-        ax.set_ylim(bottom=-0.067, top=1.02)
+        ax.set_ylim(bottom=-0.02, top=1.02)
         for y_value in [i * 0.1 for i in range(0, 11)]:
             ax.axhline(y=y_value, color='gray', linestyle='--', linewidth=self._linewidth_metric)
 

@@ -158,6 +158,8 @@ class TransformFactory:
 
 
 if __name__ == '__main__':
+
+
     from sanity_checks.check_transforms import test_transform
     img_idx = {
         'imagenet': 1,
