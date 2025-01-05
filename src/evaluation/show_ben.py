@@ -24,6 +24,7 @@ output_path = "output/show_ben"
 os.makedirs(output_path, exist_ok=True)
 for i in range(10):
     img, lbl = ds[i]
+    print(img)
     # make label human readable
     lbl = torch.where(lbl == 1)[0]
     # convert tensor to string
