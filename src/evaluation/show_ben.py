@@ -30,4 +30,4 @@ for i in range(10):
     # save tensor
     lbl = ",".join([str(i.item()) for i in lbl])
     print(i, lbl)
-    img.save(f"{output_path}/{i}_{lbl}.png")
+    img.save(f"{output_path}/{i}.png")
