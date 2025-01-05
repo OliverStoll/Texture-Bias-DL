@@ -3,6 +3,8 @@ util.MESSAGE_LEVEL = util.MessageLevel.INFO  # use INFO to see all messages
 from configilm.extra.DataSets import BENv2_DataSet
 from configilm.extra.DataModules import BENv2_DataModule
 from pathlib import Path
+import torch
+from torchvision.utils import save_image
 
 data_dirs = {
             "images_lmdb": Path("/faststorage") / "BigEarthNet-V2" / "BigEarthNet-V2-LMDB",
@@ -20,10 +22,4 @@ img, lbl = ds[0]
 print(img.shape, lbl.shape)
 
 # save image
-import PIL
-from PIL import Image
-import numpy as np
-img = np.moveaxis(img, 0, -1)
-print(img.shape)
-img = Image.fromarray(img)
-img.save("test.png")
+save_image(img, "test.png")
