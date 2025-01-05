@@ -26,7 +26,7 @@ for i in range(10):
     img, lbl = ds[i]
     # make label human readable
     lbl = torch.where(lbl == 1)[0]
-    # make lbl string
-    lbl = ",".join([l for l in lbl])
+    # convert tensor to string
+    lbl = "".join([str(i.item()) for i in lbl])
     print(i, lbl)
     save_image(img, f"{output_path}/BEN_{i}_{lbl}.png")
