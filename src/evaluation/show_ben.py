@@ -19,5 +19,8 @@ ds = BENv2_DataSet.BENv2DataSet(
 img, lbl = ds[0]
 print(img.shape, lbl.shape)
 
-
-
+# save image
+import PIL
+from PIL import Image
+img = Image.fromarray(img)
+img.save("test.png")
