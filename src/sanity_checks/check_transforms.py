@@ -67,6 +67,23 @@ STDS_TO_ZERO_ONE = {
 }
 
 
+def normalize_ben_rgb(rgb_tensor: torch.Tensor) -> torch.Tensor:
+    """
+    Normalizes a BEN RGB tensor of shape (3, H, W) in the order (B04, B03, B02).
+    Returns the normalized tensor (channel-wise standardization).
+    """
+    # Extract channel-wise means and stds for B04, B03, B02
+    means = [ben_mean["B04"], ben_mean["B03"], ben_mean["B02"]]
+    stds = [ben_std["B04"], ben_std["B03"], ben_std["B02"]]
+
+    # Perform in-place normalization: (value - mean) / std
+    for i in range(len(BEN_RGB_CHANNELS)):
+        rgb_tensor[i] = (rgb_tensor[i] - means[i]) / stds[i]
+
+    return rgb_tensor
+
+
+
 def get_example_image():
     img = Image.open(CONFIG['example_image'])
     return img
@@ -112,13 +129,12 @@ def test_transform(transform, transform_name, param, dataset, example_idx=0):
     save_path = f"{CONFIG['example_image_output']}/{dataset}"
     os.makedirs(save_path, exist_ok=True)
     original_tensor = get_example_tensor(dataset, example_idx=example_idx)
+    if not test_tensor_is_normalized(original_tensor) and dataset == 'bigearthnet':
+        original_tensor = normalize_ben_rgb(original_tensor)
+
     transformed_tensor = original_tensor.clone()
     assert test_tensor_is_normalized(original_tensor), "Original tensor is not normalized."
     transformed_tensor = transform(transformed_tensor)
-    if dataset == 'bigearthnet':
-        transformed_tensor = transformed_tensor[BEN_RGB_CHANNELS, :, :]
-        original_tensor = original_tensor[BEN_RGB_CHANNELS, :, :]
-
     transformed_tensor = denormalize_tensor_to_ZERO_ONE(transformed_tensor, dataset)
     original_tensor = denormalize_tensor_to_ZERO_ONE(original_tensor, dataset)
     if torch.any(transformed_tensor < 0) or torch.any(transformed_tensor > 1):

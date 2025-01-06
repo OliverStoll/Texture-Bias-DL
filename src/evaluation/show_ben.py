@@ -20,9 +20,9 @@ ds = BENv2_DataSet.BENv2DataSet(
     data_dirs=data_dirs
 )
 
-output_path = "output/show_ben"
+output_path = "output"
 os.makedirs(output_path, exist_ok=True)
-for i in range(10):
+for i in range(0, 10000, 100):
     img, lbl = ds[i]
     print(img)
     # make label human readable
@@ -30,4 +30,4 @@ for i in range(10):
     # save tensor
     lbl = ",".join([str(i.item()) for i in lbl])
     print(i, lbl)
-    torch.save(img, f"{output_path}/{i}.pt")
+    torch.save(img, f"{output_path}/bigearthnet_{i}.pt")
