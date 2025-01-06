@@ -20,7 +20,7 @@ ds = BENv2_DataSet.BENv2DataSet(
     data_dirs=data_dirs
 )
 
-output_path = "output"
+output_path = "output/test_data"
 os.makedirs(output_path, exist_ok=True)
 for i in range(0, 10000, 100):
     img, lbl = ds[i]
