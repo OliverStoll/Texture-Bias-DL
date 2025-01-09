@@ -165,6 +165,15 @@ class CaltechDataModule(pl.LightningDataModule):
 
 
 if __name__ == '__main__':
+    import os
+    import torch
     train_dl, _, _ = CaltechDataModule(num_workers=1).get_setup_dataloader()
-    batch = next(iter(train_dl))
     print(len(train_dl))
+    output_dir = "output/test_data/caltech"
+    os.makedirs(output_dir, exist_ok=True)
+    # save the first img tensor of each batch
+    for i, (imgs, _) in enumerate(train_dl):
+        img = imgs[0]
+        img_path = os.path.join(output_dir, f"caltech_{i*32}.png")
+        transforms.ToPILImage()(img).save(img_path)
+

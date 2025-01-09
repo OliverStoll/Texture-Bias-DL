@@ -57,7 +57,7 @@ class ResultsReader:
     min_performances = {
         'bigearthnet': 0.146761,
         'rgb_bigearthnet': 0.146667,
-        'deepglobe': 0.332418,  # 0.23
+        'deepglobe': 0.332418,
         'caltech': 0.041328,
         'caltech_120': 0.044320,
         'caltech_ft': 0.055664,
@@ -440,9 +440,6 @@ class ResultsPlotter:
             **self.errorbar_default_style,
         )
         if 'transform_param_labels' in dataset_mean.columns:
-            x_labels = {
-                'Bilateral~Channel Shuffle': ['0,0', '']
-            }
             if dataset_results['dataset'].iloc[0] not in ['rgb_bigearthnet', 'deepglobe']:
                 # divide the second value after ~ with the number of channels
                 if 'Channel' in dataset_results['transform'].iloc[0]:
@@ -455,8 +452,19 @@ class ResultsPlotter:
                 dataset_mean['transform_param_labels'] = dataset_mean['transform_param_labels'].apply(
                     lambda x: x.replace('~', ',')
                 )
+                # get value before , for x axis
+                dataset_mean['transform_param_labels_1'] = dataset_mean['transform_param_labels'].apply(
+                    lambda x: x.split(',')[0]
+                )
+                dataset_mean['transform_param_labels_2'] = dataset_mean['transform_param_labels'].apply(
+                    lambda x: x.split(',')[1] if ',' in x else None
+                )
                 ax.set_xticks(dataset_mean['transform_param'])
-                ax.set_xticklabels(dataset_mean['transform_param_labels'])
+                ax.set_xticklabels(dataset_mean['transform_param_labels_1'])
+                # test second x axis
+                ax2 = ax.twiny()
+                ax2.set_xticks(dataset_mean['transform_param'])
+                ax.set_xticklabels(dataset_mean['transform_param_labels_2'])
 
     def plot_single_dataset_multiple_models(
             self,

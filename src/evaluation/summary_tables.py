@@ -11,14 +11,36 @@ warnings.filterwarnings("ignore")
 
 
 dataset_names_friendly = {
-    'imagenet': 'ImageNet',
-    'caltech': 'Caltech',
-    'caltech_120': 'Caltech 120',
-    'caltech_ft': 'Caltech Finet.',
-    'bigearthnet': 'BigEarthNet',
-    'rgb_bigearthnet': 'RGB BigEarthNet',
-    'deepglobe': 'DeepGlobe',
+    'imagenet': '\\as{imnet}',
+    'caltech': '\\as{caltech}',
+    'caltech_120': '\\as{caltech-120}',
+    'caltech_ft': '\\as{caltech-ft}',
+    'bigearthnet': '\\as{ben}',
+    'rgb_bigearthnet': '\\as{rgb-ben}',
+    'deepglobe': '\\as{deepg}',
 }
+
+model_names_friendly = {
+    'resnet': 'ResNet',
+    'efficientnet': 'EfficientNet',
+    'convnext': 'ConvNeXt',
+    'regnetx': 'RegNetX',
+    'dense': 'DenseNet',
+    'renext': 'ResNeXt',
+    'mobilenet': 'MobileNetV3',
+    'xception': 'Xception',
+    'inception': 'Inception',
+    'regnety': 'RegNetY',
+    'deit': 'DeiT',
+    'cait': 'CaiT',
+    'pvt': 'PVT',
+    'vit': 'ViT',
+    'pit': 'PiT',
+    'beit': 'BeiT',
+    'convmixer': 'ConvMixer',
+    'mvit': 'MViT',
+}
+
 
 
 
