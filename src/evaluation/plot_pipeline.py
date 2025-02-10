@@ -134,5 +134,5 @@ if __name__ == '__main__':
         )
         plotter_.plot_all(
             score_types=['cleaned_score'],
-            exclude_plot_type='single',
+            # exclude_plot_type='single',
         )

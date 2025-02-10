@@ -234,6 +234,7 @@ class ResultsPlotter:
     }
     _linewidth_metric = 0.5
     ax_label_fontsize = 12
+    title_fontsize = 15
     legend_fontsize = 11
     errorbar_default_style = {
         'alpha': 0.5,
@@ -345,7 +346,7 @@ class ResultsPlotter:
             plot_title = transform_names_friendly[plot_title]
         except KeyError:
             pass
-        # ax.set_title(plot_title)
+        ax.set_title(plot_title, fontdict={'fontsize': self.title_fontsize})
         # add a legend entry for the model types styles
         if self.plot_split_by_model_type:
             cnn_style = self.model_type_styles['cnn']
@@ -355,7 +356,6 @@ class ResultsPlotter:
             ax.plot([], [], label=' ', color='white')
             ax.plot([], [], **cnn_style, label='CNN')
             ax.plot([], [], **transformer_style, label='Transformer')
-            # TODO: add model averages
 
     def plot_single_dataset(
             self,
@@ -378,10 +378,6 @@ class ResultsPlotter:
                 ax=ax, dataset_results=dataset_results, label=dataset_name, plot_style=plot_style
             )
         self._set_dataset_plot_layout(ax, x_ticks=dataset_results['transform_param'].unique())
-
-    def plot_model_type_average(self):
-        raise NotImplementedError
-        # TODO: Implement
 
 
     def plot_single_dataset_avg_split_by_architecture(
@@ -439,32 +435,36 @@ class ResultsPlotter:
             color=plot_style['color'] if 'color' in plot_style else None,
             **self.errorbar_default_style,
         )
-        if 'transform_param_labels' in dataset_mean.columns:
-            if dataset_results['dataset'].iloc[0] not in ['rgb_bigearthnet', 'deepglobe']:
-                # divide the second value after ~ with the number of channels
-                if 'Channel' in dataset_results['transform'].iloc[0]:
-                    num_channels = ResultsReader.dataset_channels[dataset_results['dataset'].iloc[0]]
-                    dataset_mean['transform_param_labels'] = dataset_mean['transform_param_labels'].apply(
-                        lambda x: f"{x.split('~')[0]}~{min(int(x.split('~')[1]), num_channels)}"
-                    )
+        try:
+            if 'transform_param_labels' in dataset_mean.columns:
+                if dataset_results['dataset'].iloc[0] not in ['rgb_bigearthnet', 'deepglobe']:
+                    # divide the second value after ~ with the number of channels
+                    if 'Channel' in dataset_results['transform'].iloc[0]:
+                        num_channels = ResultsReader.dataset_channels[dataset_results['dataset'].iloc[0]]
+                        dataset_mean['transform_param_labels'] = dataset_mean['transform_param_labels'].apply(
+                            lambda x: f"{x.split('~')[0]}~{min(int(x.split('~')[1]), num_channels)}"
+                        )
 
-                # replace ~ with , for better readability
-                dataset_mean['transform_param_labels'] = dataset_mean['transform_param_labels'].apply(
-                    lambda x: x.replace('~', ',')
-                )
-                # get value before , for x axis
-                dataset_mean['transform_param_labels_1'] = dataset_mean['transform_param_labels'].apply(
-                    lambda x: x.split(',')[0]
-                )
-                dataset_mean['transform_param_labels_2'] = dataset_mean['transform_param_labels'].apply(
-                    lambda x: x.split(',')[1] if ',' in x else None
-                )
-                ax.set_xticks(dataset_mean['transform_param'])
-                ax.set_xticklabels(dataset_mean['transform_param_labels_1'])
+                    # replace ~ with , for better readability
+                    dataset_mean['transform_param_labels'] = dataset_mean['transform_param_labels'].apply(
+                        lambda x: x.replace('~', ',')
+                    )
+                    # get value before , for x axis
+                    dataset_mean['transform_param_labels_1'] = dataset_mean['transform_param_labels'].apply(
+                        lambda x: x.split(',')[0]
+                    )
+                    dataset_mean['transform_param_labels_2'] = dataset_mean['transform_param_labels'].apply(
+                        lambda x: x.split(',')[1] if ',' in x else None
+                    )
+                    ax.set_xticks(dataset_mean['transform_param'])
+                    ax.set_xticklabels(dataset_mean['transform_param_labels'])
+        except:
+            pass
+                #ax.set_xticklabels(dataset_mean['transform_param_labels_1'])
                 # test second x axis
-                ax2 = ax.twiny()
-                ax2.set_xticks(dataset_mean['transform_param'])
-                ax.set_xticklabels(dataset_mean['transform_param_labels_2'])
+                #ax2 = ax.twiny()
+                #ax2.set_xticks(dataset_mean['transform_param'])
+                #ax.set_xticklabels(dataset_mean['transform_param_labels_2'])
 
     def plot_single_dataset_multiple_models(
             self,
@@ -494,7 +494,7 @@ class ResultsPlotter:
         loc = 'lower right' if self.num_non_used_subplots != 0 else 'upper right'
         if self.plot_as_subplots is not True:
             loc = 'lower left'
-        fig.legend(handles=handles, labels=labels, loc=loc, fontsize=self.legend_fontsize)
+        # fig.legend(handles=handles, labels=labels, loc=loc, fontsize=self.legend_fontsize)
         x_label = self.x_labels[transform_name] if transform_name in self.x_labels else self.x_label
         y_label = f"{self.y_label}{os.getenv('Y_LABEL', '')}Performance"
         fig.supxlabel(x_label, fontsize=self.ax_label_fontsize)

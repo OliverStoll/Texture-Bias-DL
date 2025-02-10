@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore")
 
 reader_data = ResultsReader().read_data(
     data_path='C:/CODE/master-thesis/data/results_v7.csv',
-    filter_for_transforms='combined',
+    filter_for_transforms='single',
 )
 
 upper_bounds = {
@@ -57,7 +57,7 @@ transform_to_category = {
     'Patch Shuffle~Channel Shuffle': 'Texture'
 }
 
-for dataset in ['deepglobe', 'bigearthnet']:
+for dataset in ['rgb_bigearthnet']:
     # plot bar chart for 9 subplots
     # fig, ax = plt.subplots(3, 3, figsize=(20, 20))
     # fig.suptitle(f"{dataset} - Cleaned Scores")
@@ -92,7 +92,7 @@ for dataset in ['deepglobe', 'bigearthnet']:
                 continue
             cleaned_scores[class_name] = (class_score - lower_bound) / bound_difference
         cleaned_scores = {k: round(v, 4) for k, v in cleaned_scores.items()}
-        if dataset == 'bigearthnet':
+        if dataset == 'bigearthnet' or dataset == 'rgb_bigearthnet':
             cleaned_scores = {ben_label_mapping.get(k, k): v for k, v in cleaned_scores.items()}
         print(transform, '\n', avg_class_scores)
         print(cleaned_scores)
@@ -102,7 +102,7 @@ for dataset in ['deepglobe', 'bigearthnet']:
         # adjust plots to the top
         if dataset == 'deepglobe':
             plt.subplots_adjust(top=0.95, bottom=0.175, left=0.11)
-        if dataset == 'bigearthnet':
+        if dataset == 'bigearthnet' or dataset == 'rgb_bigearthnet':
             plt.subplots_adjust(top=0.95, bottom=0.25, left=0.11)
         cleaned_scores_without_avgs = {k: v for k, v in cleaned_scores.items() if k not in ['macro', 'micro']}
         try:
@@ -121,14 +121,16 @@ for dataset in ['deepglobe', 'bigearthnet']:
         xticks = list(cleaned_scores_without_avgs.keys())
         plt.xticks(list(cleaned_scores_without_avgs.keys()), rotation=90)
         plt.yticks(ticks=[-0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1])
-        plt.ylim(-0.1, 1)
+        # plt.ylim(-0.1, 1)
+        plt.ylim(0, 1)
         # plot dashed line for 0
         plt.axhline(0, color='black', linestyle='-')
         # plt.axhline(cleaned_scores['micro'], color='navy', linestyle=':')
         plt.axhline(cleaned_scores['macro'], color='navy', linestyle='--')
         save_path = f"C:/CODE/master-thesis/results/v7/classwise/{dataset}"
         os.makedirs(save_path, exist_ok=True)
-        plt.savefig(f"{save_path}/{transform}.png")
+        save_file = f"{save_path}/{transform}.png"
+        plt.savefig(save_file)
         plt.show()
         plt.close()
 
