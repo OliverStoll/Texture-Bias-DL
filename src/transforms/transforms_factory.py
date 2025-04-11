@@ -1,16 +1,16 @@
 from torchvision.transforms import Compose
 from common_utils.logger import create_logger
 
-from transforms.transforms_fns.grid_shuffle import PatchShuffleTransform
-from transforms.transforms_fns.sobel import SobelFilterTransform
-from transforms.transforms_fns.bilateral import BilateralFilterTransform
-from transforms.transforms_fns.median import MedianFilterTransform
-from transforms.transforms_fns.gaussian_blur import GaussianBlurTransform
-from transforms.transforms_fns.channel_shuffle import ChannelShuffleTransform
-from transforms.transforms_fns.channel_inversion import ChannelInversionTransform
-from transforms.transforms_fns.grayscale import GrayScaleTransform
-from transforms.transforms_fns.patch_rotation import PatchRotationTransform
-from transforms.transforms_fns.noise import NoiseFilterTransform
+from transforms.transform_functions.grid_shuffle import PatchShuffleTransform
+from transforms.transform_functions.sobel import SobelFilterTransform
+from transforms.transform_functions.bilateral import BilateralFilterTransform
+from transforms.transform_functions.median import MedianFilterTransform
+from transforms.transform_functions.gaussian_blur import GaussianBlurTransform
+from transforms.transform_functions.channel_shuffle import ChannelShuffleTransform
+from transforms.transform_functions.channel_inversion import ChannelInversionTransform
+from transforms.transform_functions.grayscale import GrayScaleTransform
+from transforms.transform_functions.patch_rotation import PatchRotationTransform
+from transforms.transform_functions.noise import NoiseFilterTransform
 
 empty_transforms = [{
     'type': None,
@@ -158,7 +158,7 @@ class TransformFactory:
 
 
 if __name__ == '__main__':
-    from sanity_checks.check_transforms import test_transform
+    from tests.transforms import test_transform
     img_idx = {
         'imagenet': 1,
         'deepglobe': 1,

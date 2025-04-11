@@ -49,7 +49,7 @@ class DataLoaderFactory:
 
 
 if __name__ == "__main__":
-    from sanity_checks.check_dataloader import print_dataloader_sizes
+    from tests.dataloader import print_dataloader_sizes
     print("DATASETS")
     factory = DataLoaderFactory()
     for dataset_name in factory.dataset_names:
