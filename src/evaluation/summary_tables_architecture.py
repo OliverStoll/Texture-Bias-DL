@@ -23,7 +23,7 @@ dataset_names_friendly = {
 
 
 reader_data = ResultsReader().read_data(
-    data_path='C:/CODE/master-thesis/data/results_v7.csv',
+    data_path='/data/run_results.csv',
 )
 # filter out convnext for caltech and caltech_120
 reader_data = reader_data[~((reader_data['dataset'] == 'caltech') & (reader_data['model'] == 'convnext'))]

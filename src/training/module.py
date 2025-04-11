@@ -10,7 +10,7 @@ from sklearn.metrics import classification_report
 from common_utils.config import CONFIG
 from common_utils.logger import create_logger
 
-from data_loading.caltech.caltech_constants import CALTECH_CLASSNAMES_20
+from data_loading.caltech.constants import CALTECH_CLASSNAMES_20
 
 BEN_LABELS = {
     0: ("Urban fabric", "Urban"),

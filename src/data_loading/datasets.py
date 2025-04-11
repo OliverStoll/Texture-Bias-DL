@@ -7,10 +7,10 @@ from common_utils.config import CONFIG
 from torchvision.transforms import ToTensor
 
 # from models import ModelFactory
-from data_loading.imagenet.imagenet_datamodule import ImageNetDataModule
-from data_loading.caltech.caltech_datamodule import CaltechDataModule
+from data_loading.imagenet.datamodule import ImageNetDataModule
+from data_loading.caltech.datamodule import CaltechDataModule
 from data_loading.bigearthnet.BENv2_DataModule import BENv2DataModule
-from data_loading.deepglobe.deepglobe_datamodule import DeepglobeDataModule
+from data_loading.deepglobe.datamodule import DeepglobeDataModule
 
 
 

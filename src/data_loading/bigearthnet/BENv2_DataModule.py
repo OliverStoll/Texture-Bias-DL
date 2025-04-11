@@ -1,10 +1,3 @@
-"""
-Datamodule for BigEarthNet dataset. Files can be requested by contacting
-the author.
-Original Paper of Image Data:
-TO BE PUBLISHED
-https://bigearth.net/
-"""
 from pathlib import Path
 from typing import Callable
 from typing import Mapping

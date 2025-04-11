@@ -101,8 +101,9 @@ caltech101_classnames = [
     "wrench",
     "yin_yang",
 ]
-# todo FIX
 CALTECH101_IDX2NAME = {idx: name for idx, name in enumerate(caltech101_classnames)}
 CALTECH101_NAME2IDX = {name: idx for idx, name in enumerate(caltech101_classnames)}
-
-CALTECH_CLASSNAMES_20 = ['airplanes', 'Motorbikes', 'Faces', 'Faces_easy', 'watch', 'Leopards', 'bonsai', 'ketch', 'chandelier', 'hawksbill', 'grand_piano', 'brain', 'butterfly', 'helicopter', 'menorah', 'kangaroo', 'starfish', 'trilobite', 'buddha', 'ewer']
+CALTECH_CLASSNAMES_20 = ['airplanes', 'Motorbikes', 'Faces', 'Faces_easy', 'watch', 'Leopards', 'bonsai', 'ketch',
+                         'chandelier', 'hawksbill', 'grand_piano', 'brain', 'butterfly', 'helicopter', 'menorah',
+                         'kangaroo', 'starfish', 'trilobite', 'buddha', 'ewer'
+                         ]

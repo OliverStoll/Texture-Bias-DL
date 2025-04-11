@@ -8,7 +8,7 @@ from common_utils.config import CONFIG
 from timm.data import create_transform, resolve_data_config
 from timm.data.transforms import ToTensor
 
-from models import ModelFactory
+from models.models import ModelFactory
 
 
 DATA_CONFIG = CONFIG['datasets']['imagenet']
