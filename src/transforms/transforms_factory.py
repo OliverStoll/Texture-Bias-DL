@@ -163,8 +163,10 @@ if __name__ == '__main__':
         'imagenet': 1,
         'deepglobe': 1,
     }
+    neutral_transform = TransformFactory().get_single_default_transform('Bilateral')[0]
     dataset_names = ['imagenet', 'bigearthnet', 'caltech', 'deepglobe']
-    # dataset_names = ['deepglobe']
+    dataset_names = ['imagenet', 'caltech', 'deepglobe']
+    dataset_names = ['deepglobe']
     for dataset_name in dataset_names:
         example_idx = img_idx.get(dataset_name, 0)
 
@@ -187,5 +189,26 @@ if __name__ == '__main__':
                 dataset=dataset_name,
                 example_idx=example_idx
             )
+
+
+        # plot 10 examples:
+        try:
+            for i in range(0, 10000, 100):
+                test_transform(
+                    transform=neutral_transform['transform'],
+                    transform_name=f"ORIGINAL",
+                    param=i,
+                    dataset=dataset_name,
+                    example_idx=i
+                )
+        except Exception as e:
+            for i in range(0, 4):
+                test_transform(
+                    transform=neutral_transform['transform'],
+                    transform_name=f"ORIGINAL",
+                    param=i,
+                    dataset=dataset_name,
+                    example_idx=i
+                )
 
 

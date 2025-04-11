@@ -10,7 +10,7 @@ from common_utils.logger import create_logger
 transform_names_friendly = {
     'channel_shuffle': 'Channel Shuffle',
     'channel_inversion': 'Channel Inversion',
-    'greyscale': 'Channel Mean',
+    'greyscale': 'Channel Averaging',
     'bilateral': 'Bilateral',
     'median': 'Median',
     'gaussian': 'Gaussian',
@@ -18,10 +18,10 @@ transform_names_friendly = {
     'patch_rotation': 'Patch Rotation',
     'noise': 'Noise',
     'bilateral~patch_shuffle': 'Bilateral & Patch Shuffle',
-    'bilateral~channel_shuffle': 'Bilateral & Channel Rotation',
+    'bilateral~channel_shuffle': 'Bilateral & Channel Shuffle',
     'patch_shuffle~channel_shuffle': 'Patch Shuffle & Channel Shuffle',
 }
-transform_names_friendly = {
+transform_names_data = {
     'channel_shuffle': 'Channel Shuffle',
     'channel_inversion': 'Channel Inversion',
     'greyscale': 'Channel Mean',
@@ -31,9 +31,9 @@ transform_names_friendly = {
     'patch_shuffle': 'Patch Shuffle',
     'patch_rotation': 'Patch Rotation',
     'noise': 'Noise',
-    'bilateral~patch_shuffle': 'Bilateral & Patch Shuffle',
-    'bilateral~channel_shuffle': 'Bilateral & Channel Rotation',
-    'patch_shuffle~channel_shuffle': 'Patch Shuffle & Channel Shuffle',
+    'bilateral~patch_shuffle': 'Bilateral~Patch Shuffle',
+    'bilateral~channel_shuffle': 'Bilateral~Channel Shuffle',
+    'patch_shuffle~channel_shuffle': 'Patch Shuffle~Channel Shuffle',
 }
 dataset_names_friendly = {
     'imagenet': 'ImageNet',
@@ -55,13 +55,13 @@ class ResultsReader:
         'gaussian': [0.5, 2],
     }
     min_performances = {
-        'bigearthnet': 0.14,
-        'rgb_bigearthnet': 0.14,
-        'deepglobe': 0.23,
-        'caltech': 0.041,
-        'caltech_120': 0.041,
-        'caltech_ft': 0.041,
-        'imagenet': 0.001,
+        'bigearthnet': 0.146761,
+        'rgb_bigearthnet': 0.146667,
+        'deepglobe': 0.332418,
+        'caltech': 0.041328,
+        'caltech_120': 0.044320,
+        'caltech_ft': 0.055664,
+        'imagenet': 0.000969,
     }
     dataset_channels = {
         'bigearthnet': 12,
@@ -151,6 +151,8 @@ class ResultsReader:
         # filter out timestamps string lower than 20241216
         data['dt_timestamp'] = pd.to_datetime(data['timestamp'], format='%Y%m%d_%H%M%S')
         data = data[data['dt_timestamp'] >= pd.Timestamp('2024-12-16')]
+        # filter out vit for imagenet
+        data = data[~((data['model'] == 'vit') & (data['dataset'] == 'imagenet'))]
         data = self._filter_experiment(data, filter_for_transforms)
         data = self._clean_unwanted_params(data)
         data = self._clean_not_enough_channels(data)
@@ -232,9 +234,10 @@ class ResultsPlotter:
     }
     _linewidth_metric = 0.5
     ax_label_fontsize = 12
-    legend_fontsize = 13
+    title_fontsize = 15
+    legend_fontsize = 11
     errorbar_default_style = {
-        'alpha': 0.6,
+        'alpha': 0.5,
         'zorder': 100,
         'capsize': 3,
     }
@@ -244,18 +247,21 @@ class ResultsPlotter:
         'Patch Shuffle': 'Grid Size',
         'Patch Rotation': 'Grid Size',
         'Gaussian': 'Standard Deviation',
-        'Bilateral': 'Diameter',
+        'Bilateral': 'Kernel Diameter',
         'Median': 'Kernel Size',
         'Channel Shuffle': 'Share of Shuffled Channels',
         'Channel Inversion': 'Share of Inverted Channels',
-        'Channel Mean': 'Channel Mean Factor',
+        'Channel Mean': 'Channel Averaging Factor',
+        'Bilateral~Patch Shuffle': 'Kernel Diameter & Grid Size',
+        'Bilateral~Channel Shuffle': 'Kernel Diameter & Shuffled Channels',
+        'Patch Shuffle~Channel Shuffle': 'Grid Size & Shuffled Channels',
     }
     y_labels = {
         'relative_loss': 'Relative Loss of Model Performance',
         'absolute_loss': 'Absolute Loss of Model Performance',
         'score': 'Model Performances (Acc. / mAP macro)',
-        'relative_score': 'Performance relative to Baseline',
-        'cleaned_score': 'Performance relative to Baseline',
+        'relative_score': 'Relative ',
+        'cleaned_score': 'Relative ',
     }
 
 
@@ -286,6 +292,10 @@ class ResultsPlotter:
         self.plot_as_subplots = plot_as_subplots
         self.plot_individual_models = plot_individual_models
         self.plot_split_by_model_type = plot_split_by_model_type
+        if self.plot_split_by_model_type:
+            self.errorbar_default_style['alpha'] = 0.0
+        else:
+            self.errorbar_default_style['alpha'] = 0.5
         self.tight_layout = tight_layout
         os.makedirs(self.output_dir, exist_ok=True)
 
@@ -303,7 +313,7 @@ class ResultsPlotter:
         results_data = self.results
         num_plots = len(transform_names)
         for idx, transform_name in enumerate(transform_names):
-            transform_name = transform_names_friendly[transform_name]
+            transform_name = transform_names_data[transform_name]
             fig, ax = self._get_fig_ax(idx, num_plots)
             single_transform_results = results_data[results_data['transform'] == transform_name]
             self.create_single_plot(ax, single_transform_results, transform_name, dataset_names, model_names)
@@ -336,7 +346,7 @@ class ResultsPlotter:
             plot_title = transform_names_friendly[plot_title]
         except KeyError:
             pass
-        ax.set_title(plot_title)
+        ax.set_title(plot_title, fontdict={'fontsize': self.title_fontsize})
         # add a legend entry for the model types styles
         if self.plot_split_by_model_type:
             cnn_style = self.model_type_styles['cnn']
@@ -346,7 +356,6 @@ class ResultsPlotter:
             ax.plot([], [], label=' ', color='white')
             ax.plot([], [], **cnn_style, label='CNN')
             ax.plot([], [], **transformer_style, label='Transformer')
-            # TODO: add model averages
 
     def plot_single_dataset(
             self,
@@ -369,10 +378,6 @@ class ResultsPlotter:
                 ax=ax, dataset_results=dataset_results, label=dataset_name, plot_style=plot_style
             )
         self._set_dataset_plot_layout(ax, x_ticks=dataset_results['transform_param'].unique())
-
-    def plot_model_type_average(self):
-        raise NotImplementedError
-        # TODO: Implement
 
 
     def plot_single_dataset_avg_split_by_architecture(
@@ -410,6 +415,10 @@ class ResultsPlotter:
         dataset_grouped = dataset_results.groupby('transform_param')
         dataset_mean = dataset_grouped.agg({self.score_type: 'mean'}).reset_index()
         dataset_std = dataset_grouped.agg({self.score_type: 'std'}).reset_index()
+        dataset_names = dataset_results[
+            ['transform_param', 'transform_param_labels']].drop_duplicates()
+        dataset_mean = dataset_mean.merge(dataset_names, on='transform_param', how='left')
+        dataset_std = dataset_std.merge(dataset_names, on='transform_param', how='left')
         dataset_label = dataset_names_friendly[label] if label is not None else None
         ax.plot(
             dataset_mean['transform_param'],
@@ -426,9 +435,36 @@ class ResultsPlotter:
             color=plot_style['color'] if 'color' in plot_style else None,
             **self.errorbar_default_style,
         )
-        if 'transform_param_labels' in dataset_mean.columns:
-            ax.set_xticks(dataset_mean['transform_param'])
-            ax.set_xticklabels(dataset_mean['transform_param_labels'])
+        try:
+            if 'transform_param_labels' in dataset_mean.columns:
+                if dataset_results['dataset'].iloc[0] not in ['rgb_bigearthnet', 'deepglobe']:
+                    # divide the second value after ~ with the number of channels
+                    if 'Channel' in dataset_results['transform'].iloc[0]:
+                        num_channels = ResultsReader.dataset_channels[dataset_results['dataset'].iloc[0]]
+                        dataset_mean['transform_param_labels'] = dataset_mean['transform_param_labels'].apply(
+                            lambda x: f"{x.split('~')[0]}~{min(int(x.split('~')[1]), num_channels)}"
+                        )
+
+                    # replace ~ with , for better readability
+                    dataset_mean['transform_param_labels'] = dataset_mean['transform_param_labels'].apply(
+                        lambda x: x.replace('~', ',')
+                    )
+                    # get value before , for x axis
+                    dataset_mean['transform_param_labels_1'] = dataset_mean['transform_param_labels'].apply(
+                        lambda x: x.split(',')[0]
+                    )
+                    dataset_mean['transform_param_labels_2'] = dataset_mean['transform_param_labels'].apply(
+                        lambda x: x.split(',')[1] if ',' in x else None
+                    )
+                    ax.set_xticks(dataset_mean['transform_param'])
+                    ax.set_xticklabels(dataset_mean['transform_param_labels'])
+        except:
+            pass
+                #ax.set_xticklabels(dataset_mean['transform_param_labels_1'])
+                # test second x axis
+                #ax2 = ax.twiny()
+                #ax2.set_xticks(dataset_mean['transform_param'])
+                #ax.set_xticklabels(dataset_mean['transform_param_labels_2'])
 
     def plot_single_dataset_multiple_models(
             self,
@@ -458,9 +494,9 @@ class ResultsPlotter:
         loc = 'lower right' if self.num_non_used_subplots != 0 else 'upper right'
         if self.plot_as_subplots is not True:
             loc = 'lower left'
-        fig.legend(handles=handles, labels=labels, loc=loc, fontsize=self.legend_fontsize)
+        # fig.legend(handles=handles, labels=labels, loc=loc, fontsize=self.legend_fontsize)
         x_label = self.x_labels[transform_name] if transform_name in self.x_labels else self.x_label
-        y_label = f"{os.getenv('Y_LABEL', '')}{self.y_label}"
+        y_label = f"{self.y_label}{os.getenv('Y_LABEL', '')}Performance"
         fig.supxlabel(x_label, fontsize=self.ax_label_fontsize)
         fig.supylabel(y_label, fontsize=self.ax_label_fontsize)
         if self.plot_as_subplots:
@@ -481,8 +517,8 @@ class ResultsPlotter:
         x_ticks = sorted(list(x_ticks))
         ax.set_xticks(x_ticks)
         ax.set_yticks([i * 0.1 for i in range(0, 11)])
-        ax.set_ylim(bottom=0, top=1.02)
-        for y_value in [i * 0.1 for i in range(1, 11)]:
+        ax.set_ylim(bottom=-0.02, top=1.02)
+        for y_value in [i * 0.1 for i in range(0, 11)]:
             ax.axhline(y=y_value, color='gray', linestyle='--', linewidth=self._linewidth_metric)
 
     def _reformat_all_inputs_as_lists(

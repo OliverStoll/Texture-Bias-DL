@@ -56,10 +56,10 @@ class ResultsExtractor:
         run_results = self._get_run_details(run_dir_name)
         with open(log_file_path, 'r') as file:
             log_data = json.load(file)
-            class_data = {key: value for key, value in log_data.items() if "class" in key}
+            mAP_class_data = {key: value for key, value in log_data.items() if "test_mAP_" in key}
             run_results['score_micro'] = log_data.get(run_results['metric'] + '_micro', None)
             run_results['score_macro'] = log_data.get(run_results['metric'] + '_macro', None)
-            run_results['class_scores'] = json.dumps(class_data)
+            run_results['class_scores'] = json.dumps(mAP_class_data)
         return run_results
 
     def get_results(self, save_results=False):
