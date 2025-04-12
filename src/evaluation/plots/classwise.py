@@ -1,4 +1,4 @@
-from plotting import ResultsReader
+from evaluation.results.reader import ResultsReader
 import warnings
 import json
 import pandas as pd

@@ -23,3 +23,11 @@ DEEPGLOBE_NAME2IDX = {
     "water": 4,
     "barren_land": 5,
 }
+DEEPGLOBE_LABELS = {
+    0: "urban_land",
+    1: "agricultural_land",
+    2: "rangeland",
+    3: "forest_land",
+    4: "water",
+    5: "barren_land",
+}

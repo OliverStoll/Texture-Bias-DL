@@ -44,4 +44,4 @@ run_manager = RunManager(
     test_run=False,
     verbose=False,
 )
-run_manager.execute_multiple_runs()
+run_manager.execute_all_runs()

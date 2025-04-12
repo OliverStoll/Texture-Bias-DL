@@ -18,7 +18,7 @@ class DeepglobeDataModule(pl.LightningDataModule):
     def __init__(self,
                  train_transform=None,
                  eval_transform=None,
-                 also_use_default_transforms: bool = True,
+                 use_default_transforms: bool = True,
                  image_size=DATA_CONFIG['image_size'],
                  lmdb_path=DATA_CONFIG['path'],
                  labels_path=DATA_CONFIG['labels_path'],
@@ -35,7 +35,7 @@ class DeepglobeDataModule(pl.LightningDataModule):
         self.timeout = timeout
         self.image_size = image_size
         self.train_transforms, self.eval_transforms = self.get_correct_transforms(
-            also_use_default_transforms, train_transform, eval_transform
+            use_default_transforms, train_transform, eval_transform
         )
         self.lmdb_path = lmdb_path
         self.labels_path = labels_path
@@ -52,9 +52,9 @@ class DeepglobeDataModule(pl.LightningDataModule):
             transforms.Resize((self.image_size, self.image_size)),
         ])
 
-    def get_correct_transforms(self, also_use_default_transforms, train_transform,
+    def get_correct_transforms(self, use_default_transforms, train_transform,
                                eval_transform):
-        if not also_use_default_transforms:
+        if not use_default_transforms:
             return train_transform, eval_transform
         base_transform = self._get_default_transform()
         if train_transform is not None:

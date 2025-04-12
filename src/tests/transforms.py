@@ -4,8 +4,8 @@ from torchvision.transforms import ToTensor, ToPILImage
 from PIL import Image
 from common_utils.config import CONFIG
 
-# from data_loading.datasets import DataLoaderFactory
-# from transforms.transforms_factory import TransformFactory
+from transforms.transforms_factory import TransformFactory
+
 
 
 to_tensor = ToTensor()
@@ -192,10 +192,39 @@ def test_all_transforms(transform_factory, dataloader_factory, transform_name=No
                 example_idx=example_idx,
             )
 
+def manual_test_transforms():
+    """ Test script for verifying transform instantiation via TransformFactory. """
+    img_idx = {'imagenet': 1, 'deepglobe': 1}
+    dataset_names = ['imagenet', 'bigearthnet', 'caltech', 'deepglobe']
+    for dataset_name in dataset_names:
+        example_idx = img_idx.get(dataset_name, 0)
+
+        print(f"Plotting Single {dataset_name}")
+        for single_transform in TransformFactory().get_all_default_transforms():
+            test_transform(
+                transform=single_transform['transform'],
+                transform_name=single_transform['type'],
+                param=single_transform['param'],
+                dataset=dataset_name,
+                example_idx=example_idx
+            )
+
+        print(f"Plotting Double {dataset_name}")
+        for single_pair in TransformFactory().get_pair_combinations_of_default_transforms():
+            test_transform(
+                transform=single_pair['transform'],
+                transform_name=single_pair['type'],
+                param=single_pair['param'],
+                dataset=dataset_name,
+                example_idx=example_idx
+            )
+
 
 if __name__ == '__main__':
-    test_all_transforms(
+        test_all_transforms(
         example_idx=3,
         transform_name='channel_inversion',
         datasets=['caltech'],
     )
+
+

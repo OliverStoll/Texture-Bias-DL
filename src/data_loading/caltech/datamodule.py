@@ -7,7 +7,7 @@ import pytorch_lightning as pl
 from common_utils.config import CONFIG
 
 from data_loading.caltech.dataset import CaltechRGB101
-from data_loading.utils import SubsetWithLabels
+from data_loading.splitting import SubsetWithLabels
 
 
 class CaltechDataModule(pl.LightningDataModule):

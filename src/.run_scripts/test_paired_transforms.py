@@ -37,4 +37,4 @@ run_manager = RunManager(
     test_run=500,
     train=False,
 )
-run_manager.execute_multiple_runs()
+run_manager.execute_all_runs()
