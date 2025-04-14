@@ -7,10 +7,6 @@ from common_utils.logger import create_logger
 
 class ResultsExtractor:
     log = create_logger("Transform Evaluation")
-    all_runs_dir = f'/media/storagecube/olivers/logs/logs/wandb'
-    output_dir = f"{CONFIG['output_dir']}/transform_results"
-    results_df_path = f"{output_dir}/results.csv"
-    internal_log_path = 'files/wandb-summary.json'
     transformer_models = ['vit', 'deit', 'swin', 'cait', 'pvt', 'pit', 'beit', 'convmixer', 'mvit']
     metric_data_split = 'test'
     metrics = {
@@ -23,10 +19,18 @@ class ResultsExtractor:
         'caltech_ft': 'accuracy',
     }
 
-    def __init__(self):
+    def __init__(
+            self,
+            output_dir: str,
+            internal_log_path: str = 'files/wandb-summary.json',
+            all_runs_dir: str = '/media/storagecube/olivers/logs/logs/wandb'
+    ):
+        self.output_dir = output_dir
+        self.results_df_path = f"{output_dir}/results.csv"
+        self.internal_log_path = internal_log_path
+        self.all_runs_dir = all_runs_dir
         os.makedirs(self.output_dir, exist_ok=True)
-        self.log.debug(f"Starting Results-Extraction. "
-                       f"Results will be saved to {self.results_df_path}")
+        self.log.debug(f"Starting Results-Extraction. Results will be saved to {self.results_df_path}")
 
 
     def get_model_type(self, model_name):
@@ -96,5 +100,7 @@ class ResultsExtractor:
 
 
 if __name__ == '__main__':
-    pipeline = ResultsExtractor()
+    # Example usage
+    output_dir = '/home/olivers/master-thesis/output'
+    pipeline = ResultsExtractor(output_dir)
     results = pipeline.get_results(save_results=True)

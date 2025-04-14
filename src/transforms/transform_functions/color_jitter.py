@@ -3,7 +3,7 @@ import random
 from torchvision.transforms import ColorJitter
 import numpy as np
 
-from tests.transforms import test_transform
+from checks.transforms import test_transform
 
 
 class ColorJitterTransform:

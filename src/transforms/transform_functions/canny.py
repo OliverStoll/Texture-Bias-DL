@@ -3,7 +3,7 @@ import torch
 import cv2
 import torchvision.transforms as transforms
 
-from tests.transforms import test_transform
+from checks.transforms import test_transform
 
 
 class CannyFilterTransform:

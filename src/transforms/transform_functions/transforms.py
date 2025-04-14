@@ -83,14 +83,8 @@ def normalize_ben_rgb(rgb_tensor: torch.Tensor) -> torch.Tensor:
     return rgb_tensor
 
 
-
-def get_example_image():
-    img = Image.open(CONFIG['example_image'])
-    return img
-
-
 def get_example_tensor(dataset, example_idx=0):
-    tensor_path = f"{CONFIG['example_tensors_path']}/{dataset}_{example_idx}.pt"
+    tensor_path = f"{CONFIG['work_dir']}/{CONFIG['example_data_path']}/{dataset}_{example_idx}.pt"
     tensor = torch.load(tensor_path)
     return tensor
 
@@ -101,7 +95,6 @@ def _clamp_99_percentile(tensor_channel):
     max_val = torch.quantile(tensor_channel, 0.99)
     tensor_channel[tensor_channel < min_val] = min_val
     tensor_channel[tensor_channel > max_val] = max_val
-    # rescale to 0-1
     tensor_channel = (tensor_channel - min_val) / (max_val - min_val)
     return tensor_channel
 
@@ -126,7 +119,7 @@ def test_tensor_is_normalized(tensor, max_absolute_value=20):
 
 
 def test_transform(transform, transform_name, param, dataset, example_idx=0):
-    save_path = f"{CONFIG['example_image_output']}/{dataset}"
+    save_path = f"{CONFIG['work_dir']}/{CONFIG['example_image_output']}/{dataset}"
     os.makedirs(save_path, exist_ok=True)
     original_tensor = get_example_tensor(dataset, example_idx=example_idx)
     if not test_tensor_is_normalized(original_tensor) and dataset == 'bigearthnet':
@@ -157,7 +150,7 @@ def test_transform(transform, transform_name, param, dataset, example_idx=0):
 
 
 def show_original():
-    save_path = f"{CONFIG['example_image_output']}/original"
+    save_path = f"{CONFIG['work_dir']}/{CONFIG['example_image_output']}/original"
     os.makedirs(save_path, exist_ok=True)
     base_tensor = get_example_tensor('bigearthnet', example_idx=1)
     # get all pair combinations for indexes between 0 and 11:

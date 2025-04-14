@@ -13,11 +13,9 @@ seed: 42
 dataloader_timeout: 600
 
 # paths
-output_dir: '/home/olivers/master-thesis/output'
-checkpoint_dir: '/media/storagecube/olivers/logs/checkpoints'
-example_image: '/media/storagecube/data/shared/datasets/ImageNet-2012/n01440764/n01440764_10026.JPEG'
-example_tensors_path: 'C:/CODE/master-thesis/output/test_data'
-example_image_output: "C:/CODE/master-thesis/output/transform_examples"
+work_dir: 'C:/CODE/master-thesis'
+example_data_path: 'output/test_data'
+example_image_output: 'figures/transform_examples'
 
 
 # dataset parameters
@@ -70,11 +68,11 @@ datasets:
     input_channels: 3
     image_size: 120
     num_labels: 6
-    path: '/media/storagecube/data/shared/datasets/deepGlobe/ML_DeepGlobe/patches.lmdb'
-    labels_path: '/media/storagecube/data/shared/datasets/deepGlobe/ML_DeepGlobe/labels.parquet'
+    path: /media/storagecube/data/shared/datasets/deepGlobe/ML_DeepGlobe/patches.lmdb
+    labels_path: /media/storagecube/data/shared/datasets/deepGlobe/ML_DeepGlobe/labels.parquet
     csv_paths:
-      train: '/media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_train.csv'
-      validation: '/media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_test.csv'
-      test: '/media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_test.csv'
+      train: /media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_train.csv
+      validation: /media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_test.csv
+      test: /media/storagecube/data/shared/datasets/deepGlobe/splits/deepglobe_version2_test.csv
     epochs: 30
 

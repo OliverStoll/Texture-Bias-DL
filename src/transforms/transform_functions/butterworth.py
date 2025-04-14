@@ -1,7 +1,7 @@
 import torch
 import torch.fft
 
-from tests.transforms import get_example_tensor, to_tensor, to_image
+from checks.transforms import get_example_tensor, to_tensor, to_image
 
 
 class ButterworthHighPassFilter:

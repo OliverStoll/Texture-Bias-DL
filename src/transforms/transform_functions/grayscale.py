@@ -1,7 +1,7 @@
 import torch
 import torchvision.transforms as T
 
-from tests.transforms import test_transform
+from checks.transforms import test_transform
 
 
 class GrayScaleTransform:

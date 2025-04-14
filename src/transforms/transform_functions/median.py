@@ -1,7 +1,7 @@
 import torch
 import albumentations as A
 
-from tests.transforms import test_transform
+from checks.transforms import test_transform
 from transforms.transform_functions._image_normalization import convert_tensor_to_np_uint8, convert_np_uint8_to_tensor
 
 

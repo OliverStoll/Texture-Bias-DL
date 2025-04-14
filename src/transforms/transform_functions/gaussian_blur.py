@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 import numpy as np
 
 # import example tensor
-from tests.transforms import test_transform
+from checks.transforms import test_transform
 
 
 class GaussianBlurTransform:

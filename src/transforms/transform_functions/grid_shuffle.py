@@ -4,7 +4,7 @@ import torch
 import torchvision.transforms.functional as torchfunc
 import torch.nn.functional as F
 
-from tests.transforms import test_transform
+from checks.transforms import test_transform
 
 
 class PatchShuffleTransform:
@@ -56,7 +56,7 @@ class PatchShuffleTransform:
 
 
 if __name__ == '__main__':
-    from tests.transforms import test_transform
+    from checks.transforms import test_transform
     datasets = ['imagenet', 'deepglobe']
 
     for grid_size in [0, 2, 4, 6, 8, 11]:

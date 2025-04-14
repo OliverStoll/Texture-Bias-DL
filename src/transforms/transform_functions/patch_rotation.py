@@ -5,7 +5,7 @@ import random
 import torchvision.transforms.functional as torchfunc
 import torch.nn.functional as F
 
-from tests.transforms import test_transform
+from checks.transforms import test_transform
 
 
 class PatchRotationTransform:

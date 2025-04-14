@@ -10,7 +10,7 @@ from data_loading.datasets import DataLoaderFactory
 from models.models import ModelFactory
 from transforms.transforms_factory import empty_transform
 from utils.logs import mute_logs
-from tests.gpu import print_gpu_info
+from checks.gpu import print_gpu_info
 from run_single import SingleRun
 
 
