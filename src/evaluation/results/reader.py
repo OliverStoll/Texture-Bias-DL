@@ -78,20 +78,16 @@ class ResultsReader:
         results = results.reset_index(drop=True)
         grouped_scores = results.groupby(['transform', 'dataset', 'model'])['score']
         results['absolute_loss'] = grouped_scores.transform(lambda x: x.iloc[0] - x)
-        results['relative_loss'] = grouped_scores.transform(
-            lambda x: (x.iloc[0] - x) / x.iloc[0]
-        )
-        results['relative_score'] = grouped_scores.transform(
-            lambda x: x / x.iloc[0]
-        )
-        results['cleaned_score'] = -1
+        results['relative_loss'] = grouped_scores.transform(lambda x: (x.iloc[0] - x) / x.iloc[0])
+        results['relative_score'] = grouped_scores.transform(lambda x: x / x.iloc[0])
+        results['cleaned_score'] = -1.0
         for dataset_name, min_performance in self.min_performances.items():
             dataset_results = results[results['dataset'] == dataset_name]
             grouped_scores = dataset_results.groupby(['transform', 'model'])['score']
             dataset_results['cleaned_score'] = grouped_scores.transform(
                 lambda x: (x - min_performance) / (x.iloc[0] - min_performance)
             )
-            results.update(dataset_results['cleaned_score'])
+            results.update(dataset_results['cleaned_score'].astype(float))
         return results
 
     def read_data(

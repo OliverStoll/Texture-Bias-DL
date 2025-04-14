@@ -1,6 +1,6 @@
 import os
-from run_manager import RunManager
-from models import ModelFactory
+from src.training.run_manager import RunManager
+from src.models.models import ModelFactory
 
 
 # models: resnet,efficientnet,convnext,regnet,densenet,resnext,mobilenet,xception,inception,regnety,vit,deit,swin,cait,pvt,pit,beit,convmixer,mvit
