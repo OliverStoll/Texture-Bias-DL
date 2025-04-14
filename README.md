@@ -1,6 +1,6 @@
 # On the Prevalence of Texture Bias in Deep Learning Models for Remote Sensing
 
-This project investigates the phenomenon of texture bias in deep learning models, particularly Convolutional Neural Networks (CNNs) and Vision Transformers. 
+This project investigates the phenomenon of texture bias and feature bias in general in deep learning models, particularly Convolutional Neural Networks (CNNs) and Vision Transformers. 
 It provides tools to analyze and visualize, feature bias across various datasets and model architectures, to gain an understanding which image features models depend on for classification of specific datasets.
 
 It was created as part of my [Master Thesis](Thesis.pdf) _"On the Prevalence of Texture Bias in Deep Learning Models for Remote Sensing"_.
