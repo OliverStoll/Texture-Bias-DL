@@ -79,6 +79,9 @@ To analyze texture bias in a model:
 
 The analysis tools will generate plots and metrics indicating the presence and extent of texture bias in your model. These results can be found in the `visualizations/` directory.
 
+![Shape-Reliance-Measurement](Thumbnail.png)
+
+
 ## 🤝 Contributing
 
 Contributions are welcome! If you have suggestions for improvements or new features, please open an issue or submit a pull request.
